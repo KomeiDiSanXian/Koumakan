@@ -136,6 +136,3 @@ func (u *User) String() string {
 	}
 	return p + u.Name()
 }
-
-// H 是 Params 的简称
-type H = Params
