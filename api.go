@@ -95,8 +95,6 @@ func (ctx *Ctx) SendPrivateMessage(userID int64, message any) int64 {
 
 // DeleteMessage 撤回消息
 // https://github.com/botuniverse/onebot-11/blob/master/api/public.md#delete_msg-%E6%92%A4%E5%9B%9E%E6%B6%88%E6%81%AF
-//
-//nolint:interfacer
 func (ctx *Ctx) DeleteMessage(messageID any) {
 	ctx.CallAction("delete_msg", Params{
 		"message_id": messageID,
@@ -105,8 +103,6 @@ func (ctx *Ctx) DeleteMessage(messageID any) {
 
 // GetMessage 获取消息
 // https://github.com/botuniverse/onebot-11/blob/master/api/public.md#get_msg-%E8%8E%B7%E5%8F%96%E6%B6%88%E6%81%AF
-//
-//nolint:interfacer
 func (ctx *Ctx) GetMessage(messageID any) Message {
 	rsp := ctx.CallAction("get_msg", Params{
 		"message_id": messageID,
