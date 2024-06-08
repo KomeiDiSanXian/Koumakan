@@ -273,7 +273,7 @@ loop:
 
 		// pre handler
 		if m.Engine != nil {
-			for _, handler := range m.Engine.preHandler {
+			for _, handler := range m.Engine.getPreHandler() {
 				c := gorule(handler)
 				for {
 					select {
@@ -322,7 +322,7 @@ loop:
 
 		// mid handler
 		if m.Engine != nil {
-			for _, handler := range m.Engine.midHandler {
+			for _, handler := range m.Engine.getMidHandler() {
 				c := gorule(handler)
 				for {
 					select {
@@ -368,7 +368,7 @@ loop:
 
 		if m.Engine != nil {
 			// post handler
-			for _, handler := range m.Engine.postHandler {
+			for _, handler := range m.Engine.getPostHandler() {
 				c := gohandler(handler)
 				for {
 					select {

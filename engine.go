@@ -1,18 +1,68 @@
 package zero
 
 // New 生成空引擎
-func New() *Engine {
-	return &Engine{
+func New() Engine {
+	return &ZeroEngine{
 		preHandler:  []Rule{},
 		midHandler:  []Rule{},
 		postHandler: []Handler{},
 	}
 }
 
+// EngineBase 基础接口
+type EngineBase interface {
+	Delete()                           // 删除该 Engine 注册的所有 Matchers
+	SetBlock(block bool) Engine        // 设置是否阻断后续 Matcher 触发
+	UsePreHandler(rules ...Rule)       // 添加新 PreHandler(Rule)
+	UseMidHandler(rules ...Rule)       // 添加新 MidHandler(Rule)
+	UsePostHandler(handler ...Handler) // 添加新 PostHandler(Rule)
+
+}
+
+type getter interface {
+	getBlock() bool
+	getPreHandler() []Rule
+	getMidHandler() []Rule
+	getPostHandler() []Handler
+}
+
+// Engine 引擎接口
+type Engine interface {
+	getter
+	EngineBase
+	EngineTrigger
+	EngineMessage
+}
+
+// EngineTrigger 触发器接口
+type EngineTrigger interface {
+	OnPrefix(prefix string, rules ...Rule) *Matcher            // 前缀触发器
+	OnSuffix(suffix string, rules ...Rule) *Matcher            // 后缀触发器
+	OnCommand(commands string, rules ...Rule) *Matcher         // 命令触发器
+	OnRegex(regexPattern string, rules ...Rule) *Matcher       // 正则触发器
+	OnKeyword(keyword string, rules ...Rule) *Matcher          // 关键词触发器
+	OnFullMatch(src string, rules ...Rule) *Matcher            // 完全匹配触发器
+	OnFullMatchGroup(src []string, rules ...Rule) *Matcher     // 完全匹配触发器组
+	OnKeywordGroup(keywords []string, rules ...Rule) *Matcher  // 关键词触发器组
+	OnCommandGroup(commands []string, rules ...Rule) *Matcher  // 命令触发器组
+	OnPrefixGroup(prefix []string, rules ...Rule) *Matcher     // 前缀触发器组
+	OnSuffixGroup(suffix []string, rules ...Rule) *Matcher     // 后缀触发器组
+	OnShell(command string, model any, rules ...Rule) *Matcher // shell命令触发器
+}
+
+// EngineMessage 消息触发器接口
+type EngineMessage interface {
+	On(typ string, rules ...Rule) *Matcher // 添加新的指定消息类型的匹配器
+	OnMessage(rules ...Rule) *Matcher      // 消息触发器
+	OnNotice(rules ...Rule) *Matcher       // 系统提示触发器
+	OnRequest(rules ...Rule) *Matcher      // 请求消息触发器
+	OnMetaEvent(rules ...Rule) *Matcher    // 元事件触发器
+}
+
 var defaultEngine = New()
 
-// Engine is the pre_handler, post_handler manager
-type Engine struct {
+// ZeroEngine is the pre_handler, post_handler manager, it implements the Engine interface
+type ZeroEngine struct {
 	preHandler  []Rule
 	midHandler  []Rule
 	postHandler []Handler
@@ -20,50 +70,58 @@ type Engine struct {
 	matchers    []*Matcher
 }
 
-// Delete 移除该 Engine 注册的所有 Matchers
-func (e *Engine) Delete() {
+func (e *ZeroEngine) getBlock() bool { return e.block }
+
+func (e *ZeroEngine) getPreHandler() []Rule { return e.preHandler }
+
+func (e *ZeroEngine) getMidHandler() []Rule { return e.midHandler }
+
+func (e *ZeroEngine) getPostHandler() []Handler { return e.postHandler }
+
+// Delete 移除该 ZeroEngine 注册的所有 Matchers
+func (e *ZeroEngine) Delete() {
 	for _, m := range e.matchers {
 		m.Delete()
 	}
 }
 
-func (e *Engine) SetBlock(block bool) *Engine {
+func (e *ZeroEngine) SetBlock(block bool) Engine {
 	e.block = block
 	return e
 }
 
-// UsePreHandler 向该 Engine 添加新 PreHandler(Rule),
+// UsePreHandler 向该 ZeroEngine 添加新 PreHandler(Rule),
 // 会在 Rule 判断前触发，如果 preHandler
 // 没有通过，则 Rule, Matcher 不会触发
 //
 // 可用于分群组管理插件等
-func (e *Engine) UsePreHandler(rules ...Rule) {
+func (e *ZeroEngine) UsePreHandler(rules ...Rule) {
 	e.preHandler = append(e.preHandler, rules...)
 }
 
-// UseMidHandler 向该 Engine 添加新 MidHandler(Rule),
+// UseMidHandler 向该 ZeroEngine 添加新 MidHandler(Rule),
 // 会在 Rule 判断后， Matcher 触发前触发，如果 midHandler
 // 没有通过，则 Matcher 不会触发
 //
 // 可用于速率限制等
-func (e *Engine) UseMidHandler(rules ...Rule) {
+func (e *ZeroEngine) UseMidHandler(rules ...Rule) {
 	e.midHandler = append(e.midHandler, rules...)
 }
 
-// UsePostHandler 向该 Engine 添加新 PostHandler(Rule),
+// UsePostHandler 向该 ZeroEngine 添加新 PostHandler(Rule),
 // 会在 Matcher 触发后触发，如果 PostHandler 返回 false,
 // 则后续的 post handler 不会触发
 //
 // 可用于反并发等
-func (e *Engine) UsePostHandler(handler ...Handler) {
+func (e *ZeroEngine) UsePostHandler(handler ...Handler) {
 	e.postHandler = append(e.postHandler, handler...)
 }
 
-// On 添加新的指定消息类型的匹配器(默认Engine)
+// On 添加新的指定消息类型的匹配器(默认ZeroEngine)
 func On(typ string, rules ...Rule) *Matcher { return defaultEngine.On(typ, rules...) }
 
 // On 添加新的指定消息类型的匹配器
-func (e *Engine) On(typ string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) On(typ string, rules ...Rule) *Matcher {
 	matcher := &Matcher{
 		Type:   Type(typ),
 		Rules:  rules,
@@ -77,39 +135,43 @@ func (e *Engine) On(typ string, rules ...Rule) *Matcher {
 func OnMessage(rules ...Rule) *Matcher { return On("message", rules...) }
 
 // OnMessage 消息触发器
-func (e *Engine) OnMessage(rules ...Rule) *Matcher { return e.On("message", rules...) }
+func (e *ZeroEngine) OnMessage(rules ...Rule) *Matcher { return e.On("message", rules...) }
 
 // OnNotice 系统提示触发器
 func OnNotice(rules ...Rule) *Matcher { return On("notice", rules...) }
 
 // OnNotice 系统提示触发器
-func (e *Engine) OnNotice(rules ...Rule) *Matcher { return e.On("notice", rules...) }
+func (e *ZeroEngine) OnNotice(rules ...Rule) *Matcher { return e.On("notice", rules...) }
 
 // OnRequest 请求消息触发器
 func OnRequest(rules ...Rule) *Matcher { return On("request", rules...) }
 
 // OnRequest 请求消息触发器
-func (e *Engine) OnRequest(rules ...Rule) *Matcher { return On("request", rules...) }
+func (e *ZeroEngine) OnRequest(rules ...Rule) *Matcher { return On("request", rules...) }
 
 // OnMetaEvent 元事件触发器
 func OnMetaEvent(rules ...Rule) *Matcher { return On("meta_event", rules...) }
 
 // OnMetaEvent 元事件触发器
-func (e *Engine) OnMetaEvent(rules ...Rule) *Matcher { return On("meta_event", rules...) }
+func (e *ZeroEngine) OnMetaEvent(rules ...Rule) *Matcher { return On("meta_event", rules...) }
 
 // OnPrefix 前缀触发器
-func OnPrefix(prefix string, rules ...Rule) *Matcher { return defaultEngine.OnPrefix(prefix, rules...) }
+func OnPrefix(prefix string, rules ...Rule) *Matcher {
+	return defaultEngine.OnPrefix(prefix, rules...)
+}
 
 // OnPrefix 前缀触发器
-func (e *Engine) OnPrefix(prefix string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnPrefix(prefix string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{PrefixRule(prefix)}, rules...)...)
 }
 
 // OnSuffix 后缀触发器
-func OnSuffix(suffix string, rules ...Rule) *Matcher { return defaultEngine.OnSuffix(suffix, rules...) }
+func OnSuffix(suffix string, rules ...Rule) *Matcher {
+	return defaultEngine.OnSuffix(suffix, rules...)
+}
 
 // OnSuffix 后缀触发器
-func (e *Engine) OnSuffix(suffix string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnSuffix(suffix string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{SuffixRule(suffix)}, rules...)...)
 }
 
@@ -119,7 +181,7 @@ func OnCommand(commands string, rules ...Rule) *Matcher {
 }
 
 // OnCommand 命令触发器
-func (e *Engine) OnCommand(commands string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnCommand(commands string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{CommandRule(commands)}, rules...)...)
 }
 
@@ -129,7 +191,7 @@ func OnRegex(regexPattern string, rules ...Rule) *Matcher {
 }
 
 // OnRegex 正则触发器
-func (e *Engine) OnRegex(regexPattern string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnRegex(regexPattern string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{RegexRule(regexPattern)}, rules...)...)
 }
 
@@ -139,7 +201,7 @@ func OnKeyword(keyword string, rules ...Rule) *Matcher {
 }
 
 // OnKeyword 关键词触发器
-func (e *Engine) OnKeyword(keyword string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnKeyword(keyword string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{KeywordRule(keyword)}, rules...)...)
 }
 
@@ -149,7 +211,7 @@ func OnFullMatch(src string, rules ...Rule) *Matcher {
 }
 
 // OnFullMatch 完全匹配触发器
-func (e *Engine) OnFullMatch(src string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnFullMatch(src string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{FullMatchRule(src)}, rules...)...)
 }
 
@@ -159,7 +221,7 @@ func OnFullMatchGroup(src []string, rules ...Rule) *Matcher {
 }
 
 // OnFullMatchGroup 完全匹配触发器组
-func (e *Engine) OnFullMatchGroup(src []string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnFullMatchGroup(src []string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{FullMatchRule(src...)}, rules...)...)
 }
 
@@ -169,7 +231,7 @@ func OnKeywordGroup(keywords []string, rules ...Rule) *Matcher {
 }
 
 // OnKeywordGroup 关键词触发器组
-func (e *Engine) OnKeywordGroup(keywords []string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnKeywordGroup(keywords []string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{KeywordRule(keywords...)}, rules...)...)
 }
 
@@ -179,7 +241,7 @@ func OnCommandGroup(commands []string, rules ...Rule) *Matcher {
 }
 
 // OnCommandGroup 命令触发器组
-func (e *Engine) OnCommandGroup(commands []string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnCommandGroup(commands []string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{CommandRule(commands...)}, rules...)...)
 }
 
@@ -189,7 +251,7 @@ func OnPrefixGroup(prefix []string, rules ...Rule) *Matcher {
 }
 
 // OnPrefixGroup 前缀触发器组
-func (e *Engine) OnPrefixGroup(prefix []string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnPrefixGroup(prefix []string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{PrefixRule(prefix...)}, rules...)...)
 }
 
@@ -199,7 +261,7 @@ func OnSuffixGroup(suffix []string, rules ...Rule) *Matcher {
 }
 
 // OnSuffixGroup 后缀触发器组
-func (e *Engine) OnSuffixGroup(suffix []string, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnSuffixGroup(suffix []string, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{SuffixRule(suffix...)}, rules...)...)
 }
 
@@ -209,6 +271,6 @@ func OnShell(command string, model any, rules ...Rule) *Matcher {
 }
 
 // OnShell shell命令触发器
-func (e *Engine) OnShell(command string, model any, rules ...Rule) *Matcher {
+func (e *ZeroEngine) OnShell(command string, model any, rules ...Rule) *Matcher {
 	return e.On("message", append([]Rule{ShellRule(command, model)}, rules...)...)
 }
