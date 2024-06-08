@@ -87,7 +87,7 @@ func NotEqual(str string) FilterFunc {
 }
 
 // In ...
-func In(i ...interface{}) FilterFunc {
+func In(i ...any) FilterFunc {
 	ss := make([]string, 0)
 	for _, v := range i {
 		ss = append(ss, fmt.Sprint(v))

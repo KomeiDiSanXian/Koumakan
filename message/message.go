@@ -165,7 +165,7 @@ func (m Message) String() string {
 
 // Text 纯文本
 // https://github.com/botuniverse/onebot-11/tree/master/message/segment.md#%E7%BA%AF%E6%96%87%E6%9C%AC
-func Text(text ...interface{}) MessageSegment {
+func Text(text ...any) MessageSegment {
 	return MessageSegment{
 		Type: "text",
 		Data: map[string]string{
@@ -204,7 +204,7 @@ func File(file, name string) MessageSegment {
 // https://llonebot.github.io/zh-CN/develop/extends_api
 //
 // summary: LLOneBot的扩展字段：图片预览文字
-func Image(file string, summary ...interface{}) MessageSegment {
+func Image(file string, summary ...any) MessageSegment {
 	m := MessageSegment{
 		Type: "image",
 		Data: map[string]string{
@@ -349,7 +349,7 @@ func (m MessageID) ID() int64 {
 
 // Reply 回复
 // https://github.com/botuniverse/onebot-11/tree/master/message/segment.md#%E5%9B%9E%E5%A4%8D
-func Reply(id interface{}) MessageSegment {
+func Reply(id any) MessageSegment {
 	s := ""
 	switch i := id.(type) {
 	case int64:
@@ -359,7 +359,7 @@ func Reply(id interface{}) MessageSegment {
 	case string:
 		s = i
 	case float64:
-		s = strconv.Itoa(int(i)) // json 序列化 interface{} 默认为 float64
+		s = strconv.Itoa(int(i)) // json 序列化 any 默认为 float64
 	case fmt.Stringer:
 		s = i.String()
 	}
@@ -395,7 +395,7 @@ func Node(id int64) MessageSegment {
 
 // CustomNode 自定义合并转发节点
 // https://github.com/botuniverse/onebot-11/tree/master/message/segment.md#%E5%90%88%E5%B9%B6%E8%BD%AC%E5%8F%91%E8%87%AA%E5%AE%9A%E4%B9%89%E8%8A%82%E7%82%B9
-func CustomNode(nickname string, userID int64, content interface{}) MessageSegment {
+func CustomNode(nickname string, userID int64, content any) MessageSegment {
 	var str string
 	switch c := content.(type) {
 	case string:
@@ -479,7 +479,7 @@ func TTS(text string) MessageSegment {
 }
 
 // Add 为 MessageSegment 的 Data 增加一个字段
-func (m MessageSegment) Add(key string, val interface{}) MessageSegment {
+func (m MessageSegment) Add(key string, val any) MessageSegment {
 	switch val := val.(type) {
 	case string:
 		m.Data[key] = val
@@ -504,6 +504,6 @@ func (m MessageSegment) Chain(data map[string]string) MessageSegment {
 }
 
 // ReplyWithMessage returns a reply message
-func ReplyWithMessage(messageID interface{}, m ...MessageSegment) Message {
+func ReplyWithMessage(messageID any, m ...MessageSegment) Message {
 	return append(Message{Reply(messageID)}, m...)
 }
