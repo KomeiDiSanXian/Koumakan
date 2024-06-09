@@ -255,148 +255,146 @@ func gohandler(ctx *Ctx, handler Handler) <-chan struct{} {
 	return ch
 }
 
+func processMatchers(ctx *Ctx, matchers []IMatcher, t *time.Timer) {
+	for _, matcher := range matchers {
+		if !matcher.GetType()(ctx) { // 不匹配直接跳过
+			continue
+		}
+		for k := range ctx.State { // Clear State
+			delete(ctx.State, k)
+		}
+		// copy matcher
+		m := matcher.copy()
+		ctx.ma = m
+
+		// pre handler
+		if eng := m.GetEngine(); eng != nil {
+			if processEnginePreHandler(ctx, eng, t) { // true 退出循环
+				return
+			}
+		}
+		// rules
+		if processRules(ctx, m.GetRules(), t) {
+			return
+		}
+		// mid handler
+		if eng := m.GetEngine(); eng != nil {
+			if processEngineMidHandler(ctx, eng, t) { // true 退出循环
+				return
+			}
+		}
+		// handler
+		if processMatcherHandler(ctx, t) { // true 退出循环
+			return
+		}
+		if m.IsTemp() { // 临时 Matcher 删除
+			m.Delete()
+		}
+		// post handler
+		if eng := m.GetEngine(); eng != nil {
+			if processEnginePostHandler(ctx, eng, t) { // true 退出循环
+				return
+			}
+		}
+		if m.IsBlock() { // 阻断后续
+			return
+		}
+	}
+}
+
+func processRule(ctx *Ctx, rule Rule, t *time.Timer, logStr string) bool {
+	c := gorule(ctx, rule)
+	for {
+		select {
+		case ok := <-c:
+			if !ok {
+				return ctx.ma.IsBreak()
+			}
+		case <-t.C:
+			if ctx.ma.IsNoTimeout() {
+				t.Reset(BotConfig.MaxProcessTime)
+				continue
+			}
+			log.Warnf("[bot] %v 处理达到最大时延, 退出", logStr)
+			return true
+		}
+		break
+	}
+	return false
+}
+
+func processHandler(ctx *Ctx, handler Handler, t *time.Timer, logStr string) bool {
+	c := gohandler(ctx, handler)
+	for {
+		select {
+		case <-c:
+		case <-t.C:
+			if ctx.ma.IsNoTimeout() {
+				t.Reset(BotConfig.MaxProcessTime)
+				continue
+			}
+			log.Warnf("[bot] %v 处理达到最大时延, 退出", logStr)
+			return true
+		}
+		break
+	}
+	return false
+}
+
+func processEnginePreHandler(ctx *Ctx, engine Engine, t *time.Timer) bool { // 返回是否退出上层循环
+	for _, handler := range engine.getPreHandler() {
+		if processRule(ctx, handler, t, "preHandler") {
+			return true
+		}
+	}
+	return false
+}
+
+func processRules(ctx *Ctx, rules []Rule, t *time.Timer) bool {
+	for _, rule := range rules {
+		if processRule(ctx, rule, t, "rule") {
+			return true
+		}
+	}
+	return false
+}
+
+func processEngineMidHandler(ctx *Ctx, engine Engine, t *time.Timer) bool {
+	for _, handler := range engine.getMidHandler() {
+		if processRule(ctx, handler, t, "midHandler") {
+			return true
+		}
+	}
+	return false
+}
+
+func processMatcherHandler(ctx *Ctx, t *time.Timer) bool {
+	if h := ctx.ma.GetHandler(); h != nil {
+		if processHandler(ctx, h, t, "handler") {
+			return true
+		}
+	}
+	return false
+}
+
+func processEnginePostHandler(ctx *Ctx, engine Engine, t *time.Timer) bool {
+	for _, handler := range engine.getPostHandler() {
+		if processHandler(ctx, handler, t, "postHandler") {
+			return true
+		}
+	}
+	return false
+
+}
+
 // match 匹配规则，处理事件
-//
-// todo:
-//
-//	当前循环过于复杂，需要优化
-//	超时处理可以使用 context.WithTimeout来实现
 func match(ctx *Ctx, matchers []IMatcher, maxwait time.Duration) {
 	if BotConfig.MarkMessage && ctx.Event.MessageID != nil {
 		ctx.MarkThisMessageAsRead()
 	}
 	t := time.NewTimer(maxwait)
 	defer t.Stop()
-loop:
-	for _, matcher := range matchers {
-		if !matcher.GetType()(ctx) {
-			continue
-		}
-		for k := range ctx.State { // Clear State
-			delete(ctx.State, k)
-		}
-		m := matcher.copy()
-		ctx.ma = m
-
-		// pre handler
-		if eng := m.GetEngine(); eng != nil {
-			for _, handler := range eng.getPreHandler() {
-				c := gorule(ctx, handler)
-				for {
-					select {
-					case ok := <-c:
-						if !ok { // 有 pre handler 未满足
-							if m.IsBreak() { // 阻断后续
-								break loop
-							}
-							continue loop
-						}
-					case <-t.C:
-						if m.IsNoTimeout() { // 不设超时限制
-							t.Reset(maxwait)
-							continue
-						}
-						log.Warnln("[bot] preHandler 处理达到最大时延, 退出")
-						break loop
-					}
-					break
-				}
-			}
-		}
-
-		for _, rule := range m.GetRules() {
-			c := gorule(ctx, rule)
-			for {
-				select {
-				case ok := <-c:
-					if !ok { // 有 Rule 的条件未满足
-						if m.IsBreak() { // 阻断后续
-							break loop
-						}
-						continue loop
-					}
-				case <-t.C:
-					if m.IsNoTimeout() { // 不设超时限制
-						t.Reset(maxwait)
-						continue
-					}
-					log.Warnln("[bot] rule 处理达到最大时延, 退出")
-					break loop
-				}
-				break
-			}
-		}
-
-		// mid handler
-		if eng := m.GetEngine(); eng != nil {
-			for _, handler := range eng.getMidHandler() {
-				c := gorule(ctx, handler)
-				for {
-					select {
-					case ok := <-c:
-						if !ok { // 有 mid handler 未满足
-							if m.IsBreak() { // 阻断后续
-								break loop
-							}
-							continue loop
-						}
-					case <-t.C:
-						if m.IsNoTimeout() { // 不设超时限制
-							t.Reset(maxwait)
-							continue
-						}
-						log.Warnln("[bot] midHandler 处理达到最大时延, 退出")
-						break loop
-					}
-					break
-				}
-			}
-		}
-
-		if h := m.GetHandler(); h != nil {
-			c := gohandler(ctx, h)
-			for {
-				select {
-				case <-c: // 处理事件
-				case <-t.C:
-					if m.IsNoTimeout() { // 不设超时限制
-						t.Reset(maxwait)
-						continue
-					}
-					log.Warnln("[bot] Handler 处理达到最大时延, 退出")
-					break loop
-				}
-				break
-			}
-		}
-		if matcher.IsTemp() { // 临时 Matcher 删除
-			matcher.Delete()
-		}
-
-		if eng := m.GetEngine(); eng != nil {
-			// post handler
-			for _, handler := range eng.getPostHandler() {
-				c := gohandler(ctx, handler)
-				for {
-					select {
-					case <-c:
-					case <-t.C:
-						if m.IsNoTimeout() { // 不设超时限制
-							t.Reset(maxwait)
-							continue
-						}
-						log.Warnln("[bot] postHandler 处理达到最大时延, 退出")
-						break loop
-					}
-					break
-				}
-			}
-		}
-
-		if m.IsBlock() { // 阻断后续
-			break loop
-		}
-	}
+	processMatchers(ctx, matchers, t)
 }
 
 func processAtEvent(e *Event) {
