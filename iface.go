@@ -1,5 +1,10 @@
 package zero
 
+import (
+	"github.com/tidwall/gjson"
+	"github.com/wdvxdr1123/ZeroBot/message"
+)
+
 // EngineBase 基础接口
 type EngineBase interface {
 	Delete()                           // 删除该 Engine 注册的所有 Matchers
@@ -74,4 +79,101 @@ type MatcherGetter interface {
 	GetRules() []Rule    // 获取当前 Matcher 的匹配规则
 	GetHandler() Handler // 获取当前 Matcher 的处理函数
 	GetEngine() Engine   // 获取当前 Matcher 的 Engine
+}
+
+// Context 上下文接口
+type Context interface {
+	OneBotAPI
+	GoCQAPI
+	LLoneBotAPI
+}
+
+// OneBotAPI OneBotAPI接口
+type OneBotAPI interface {
+	SendGroupMessage(groupID int64, message any) int64
+	SendPrivateMessage(userID int64, message any) int64
+	DeleteMessage(messageID any)
+	GetMessage(messageID any) Message
+	GetForwardMessage(id string) gjson.Result
+	SendLike(userID int64, times int)
+	SetGroupKick(groupID, userID int64, rejectAddRequest bool)
+	SetThisGroupKick(userID int64, rejectAddRequest bool)
+	SetGroupBan(groupID, userID, duration int64)
+	SetThisGroupBan(userID, duration int64)
+	SetGroupWholeBan(groupID int64, enable bool)
+	SetThisGroupWholeBan(enable bool)
+	SetGroupAdmin(groupID, userID int64, enable bool)
+	SetThisGroupAdmin(userID int64, enable bool)
+	SetGroupAnonymous(groupID int64, enable bool)
+	SetThisGroupAnonymous(enable bool)
+	SetGroupCard(groupID, userID int64, card string)
+	SetThisGroupCard(userID int64, card string)
+	SetGroupName(groupID int64, groupName string)
+	SetThisGroupName(groupID int64, groupName string)
+	SetGroupLeave(groupID int64, isDismiss bool)
+	SetThisGroupLeave(isDismiss bool)
+	SetGroupSpecialTitle(groupID, userID int64, specialTitle string)
+	SetThisGroupSpecialTitle(userID int64, specialTitle string)
+	SetFriendAddRequest(flag string, approve bool, remark string)
+	SetGroupAddRequest(flag string, subType string, approve bool, reason string)
+	GetLoginInfo() gjson.Result
+	GetStrangerInfo(userID int64, noCache bool) gjson.Result
+	GetFriendList() gjson.Result
+	GetGroupInfo(groupID int64, noCache bool) Group
+	GetThisGroupInfo(noCache bool) Group
+	GetGroupList() gjson.Result
+	GetGroupMemberInfo(groupID int64, userID int64, noCache bool) gjson.Result
+	GetThisGroupMemberInfo(userID int64, noCache bool) gjson.Result
+	GetGroupMemberList(groupID int64) gjson.Result
+	GetThisGroupMemberList() gjson.Result
+	GetGroupMemberListNoCache(groupID int64) gjson.Result
+	GetThisGroupMemberListNoCache() gjson.Result
+	GetGroupHonorInfo(groupID int64, hType string) gjson.Result
+	GetThisGroupHonorInfo(hType string) gjson.Result
+	GetRecord(file string, outFormat string) gjson.Result
+	GetImage(file string) gjson.Result
+	GetVersionInfo() gjson.Result
+}
+
+// GoCQAPI GoCQAPI接口
+type GoCQAPI interface {
+	SetGroupPortrait(groupID int64, file string)
+	SetThisGroupPortrait(file string)
+	OCRImage(file string) gjson.Result
+	SendGroupForwardMessage(groupID int64, message message.Message) gjson.Result
+	SendPrivateForwardMessage(userID int64, message message.Message) gjson.Result
+	GetGroupSystemMessage() gjson.Result
+	MarkMessageAsRead(messageID int64) APIResponse
+	MarkThisMessageAsRead() APIResponse
+	GetOnlineClients(noCache bool) gjson.Result
+	GetGroupAtAllRemain(groupID int64) gjson.Result
+	GetThisGroupAtAllRemain() gjson.Result
+	GetGroupMessageHistory(groupID, messageID int64) gjson.Result
+	GetLatestGroupMessageHistory(groupID int64) gjson.Result
+	GetThisGroupMessageHistory(messageID int64) gjson.Result
+	GetLatestThisGroupMessageHistory() gjson.Result
+	GetGroupEssenceMessageList(groupID int64) gjson.Result
+	GetThisGroupEssenceMessageList() gjson.Result
+	SetGroupEssenceMessage(messageID int64) APIResponse
+	DeleteGroupEssenceMessage(messageID int64) APIResponse
+	GetWordSlices(content string) gjson.Result
+	GetGroupFilesystemInfo(groupID int64) gjson.Result
+	GetThisGroupFilesystemInfo() gjson.Result
+	GetGroupRootFiles(groupID int64) gjson.Result
+	GetThisGroupRootFiles() gjson.Result
+	GetGroupFilesByFolder(groupID int64, folderID string) gjson.Result
+	GetThisGroupFilesByFolder(folderID string) gjson.Result
+	GetGroupFileUrl(groupID, busid int64, fileID string) string
+	GetThisGroupFileUrl(busid int64, fileID string) string
+	UploadGroupFile(groupID int64, file, name, folder string) APIResponse
+	UploadThisGroupFile(file, name, folder string) APIResponse
+}
+
+// llOneBotAPI llOneBotAPI接口
+type LLoneBotAPI interface {
+	ForwardFriendSingleMessage(userID int64, messageID any) APIResponse
+	ForwardGroupSingleMessage(groupID int64, messageID any) APIResponse
+	SetMyAvatar(file string) APIResponse
+	GetFile(fileID string) gjson.Result
+	SetMessageEmojiLike(messageID any, emojiID rune) error
 }
