@@ -12,7 +12,7 @@ import (
 // Ctx represents the Context which hold the event.
 // 代表上下文
 type Ctx struct {
-	ma     *Matcher
+	ma     IMatcher
 	Event  *Event
 	State  State
 	caller APICaller
@@ -23,7 +23,7 @@ type Ctx struct {
 }
 
 // GetMatcher ...
-func (ctx *Ctx) GetMatcher() *Matcher {
+func (ctx *Ctx) GetMatcher() IMatcher {
 	return ctx.ma
 }
 
@@ -153,12 +153,12 @@ func (ctx *Ctx) Block() {
 
 // Block 在 pre, rules, mid 阶段阻止后续触发
 func (ctx *Ctx) Break() {
-	ctx.ma.Break = true
+	ctx.ma.(*Matcher).Break = true // panic if not Matcher, should be fixed
 }
 
 // NoTimeout 处理时不设超时
 func (ctx *Ctx) NoTimeout() {
-	ctx.ma.NoTimeout = true
+	ctx.ma.(*Matcher).NoTimeout = true // panic if not Matcher, should be fixed
 }
 
 // MessageString 字符串消息便于Regex

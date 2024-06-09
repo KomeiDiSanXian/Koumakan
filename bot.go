@@ -218,7 +218,7 @@ func processEventAsync(response []byte, caller APICaller, maxwait time.Duration)
 	}
 	matcherLock.Lock()
 	if hasMatcherListChanged {
-		matcherListForRanging = make([]*Matcher, len(matcherList))
+		matcherListForRanging = make([]IMatcher, len(matcherList))
 		copy(matcherListForRanging, matcherList)
 		hasMatcherListChanged = false
 	}
@@ -226,43 +226,50 @@ func processEventAsync(response []byte, caller APICaller, maxwait time.Duration)
 	go match(ctx, matcherListForRanging, maxwait)
 }
 
+func gorule(ctx *Ctx, rule Rule) <-chan bool {
+	ch := make(chan bool, 1)
+	go func() {
+		defer func() {
+			close(ch)
+			if pa := recover(); pa != nil {
+				log.Errorf("[bot] execute rule err: %v\n%v", pa, helper.BytesToString(debug.Stack()))
+			}
+		}()
+		ch <- rule(ctx)
+	}()
+	return ch
+}
+
+func gohandler(ctx *Ctx, handler Handler) <-chan struct{} {
+	ch := make(chan struct{}, 1)
+	go func() {
+		defer func() {
+			close(ch)
+			if pa := recover(); pa != nil {
+				log.Errorf("[bot] execute handler err: %v\n%v", pa, helper.BytesToString(debug.Stack()))
+			}
+		}()
+		handler(ctx)
+		ch <- struct{}{}
+	}()
+	return ch
+}
+
 // match 匹配规则，处理事件
-func match(ctx *Ctx, matchers []*Matcher, maxwait time.Duration) {
+//
+// todo:
+//
+//	当前循环过于复杂，需要优化
+//	超时处理可以使用 context.WithTimeout来实现
+func match(ctx *Ctx, matchers []IMatcher, maxwait time.Duration) {
 	if BotConfig.MarkMessage && ctx.Event.MessageID != nil {
 		ctx.MarkThisMessageAsRead()
-	}
-	gorule := func(rule Rule) <-chan bool {
-		ch := make(chan bool, 1)
-		go func() {
-			defer func() {
-				close(ch)
-				if pa := recover(); pa != nil {
-					log.Errorf("[bot] execute rule err: %v\n%v", pa, helper.BytesToString(debug.Stack()))
-				}
-			}()
-			ch <- rule(ctx)
-		}()
-		return ch
-	}
-	gohandler := func(h Handler) <-chan struct{} {
-		ch := make(chan struct{}, 1)
-		go func() {
-			defer func() {
-				close(ch)
-				if pa := recover(); pa != nil {
-					log.Errorf("[bot] execute handler err: %v\n%v", pa, helper.BytesToString(debug.Stack()))
-				}
-			}()
-			h(ctx)
-			ch <- struct{}{}
-		}()
-		return ch
 	}
 	t := time.NewTimer(maxwait)
 	defer t.Stop()
 loop:
 	for _, matcher := range matchers {
-		if !matcher.Type(ctx) {
+		if !matcher.GetType()(ctx) {
 			continue
 		}
 		for k := range ctx.State { // Clear State
@@ -272,20 +279,20 @@ loop:
 		ctx.ma = m
 
 		// pre handler
-		if m.Engine != nil {
-			for _, handler := range m.Engine.getPreHandler() {
-				c := gorule(handler)
+		if eng := m.GetEngine(); eng != nil {
+			for _, handler := range eng.getPreHandler() {
+				c := gorule(ctx, handler)
 				for {
 					select {
 					case ok := <-c:
 						if !ok { // 有 pre handler 未满足
-							if m.Break { // 阻断后续
+							if m.IsBreak() { // 阻断后续
 								break loop
 							}
 							continue loop
 						}
 					case <-t.C:
-						if m.NoTimeout { // 不设超时限制
+						if m.IsNoTimeout() { // 不设超时限制
 							t.Reset(maxwait)
 							continue
 						}
@@ -297,19 +304,19 @@ loop:
 			}
 		}
 
-		for _, rule := range m.Rules {
-			c := gorule(rule)
+		for _, rule := range m.GetRules() {
+			c := gorule(ctx, rule)
 			for {
 				select {
 				case ok := <-c:
 					if !ok { // 有 Rule 的条件未满足
-						if m.Break { // 阻断后续
+						if m.IsBreak() { // 阻断后续
 							break loop
 						}
 						continue loop
 					}
 				case <-t.C:
-					if m.NoTimeout { // 不设超时限制
+					if m.IsNoTimeout() { // 不设超时限制
 						t.Reset(maxwait)
 						continue
 					}
@@ -321,20 +328,20 @@ loop:
 		}
 
 		// mid handler
-		if m.Engine != nil {
-			for _, handler := range m.Engine.getMidHandler() {
-				c := gorule(handler)
+		if eng := m.GetEngine(); eng != nil {
+			for _, handler := range eng.getMidHandler() {
+				c := gorule(ctx, handler)
 				for {
 					select {
 					case ok := <-c:
 						if !ok { // 有 mid handler 未满足
-							if m.Break { // 阻断后续
+							if m.IsBreak() { // 阻断后续
 								break loop
 							}
 							continue loop
 						}
 					case <-t.C:
-						if m.NoTimeout { // 不设超时限制
+						if m.IsNoTimeout() { // 不设超时限制
 							t.Reset(maxwait)
 							continue
 						}
@@ -346,13 +353,13 @@ loop:
 			}
 		}
 
-		if m.Handler != nil {
-			c := gohandler(m.Handler)
+		if h := m.GetHandler(); h != nil {
+			c := gohandler(ctx, h)
 			for {
 				select {
 				case <-c: // 处理事件
 				case <-t.C:
-					if m.NoTimeout { // 不设超时限制
+					if m.IsNoTimeout() { // 不设超时限制
 						t.Reset(maxwait)
 						continue
 					}
@@ -362,19 +369,19 @@ loop:
 				break
 			}
 		}
-		if matcher.Temp { // 临时 Matcher 删除
+		if matcher.IsTemp() { // 临时 Matcher 删除
 			matcher.Delete()
 		}
 
-		if m.Engine != nil {
+		if eng := m.GetEngine(); eng != nil {
 			// post handler
-			for _, handler := range m.Engine.getPostHandler() {
-				c := gohandler(handler)
+			for _, handler := range eng.getPostHandler() {
+				c := gohandler(ctx, handler)
 				for {
 					select {
 					case <-c:
 					case <-t.C:
-						if m.NoTimeout { // 不设超时限制
+						if m.IsNoTimeout() { // 不设超时限制
 							t.Reset(maxwait)
 							continue
 						}
@@ -386,8 +393,35 @@ loop:
 			}
 		}
 
-		if m.Block { // 阻断后续
+		if m.IsBlock() { // 阻断后续
 			break loop
+		}
+	}
+}
+
+func processAtEvent(e *Event) {
+	e.IsToMe = false
+	for i, m := range e.Message {
+		if m.Type == "at" {
+			qq, _ := strconv.ParseInt(m.Data["qq"], 10, 64)
+			if qq == e.SelfID {
+				e.IsToMe = true
+				e.Message = append(e.Message[:i], e.Message[i+1:]...)
+				return
+			}
+		}
+	}
+	if e.Message == nil || len(e.Message) == 0 || e.Message[0].Type != "text" {
+		return
+	}
+	first := e.Message[0]
+	first.Data["text"] = strings.TrimLeft(first.Data["text"], " ") // Trim!
+	text := first.Data["text"]
+	for _, nickname := range BotConfig.NickName {
+		if strings.HasPrefix(text, nickname) {
+			e.IsToMe = true
+			first.Data["text"] = text[len(nickname):]
+			return
 		}
 	}
 }
@@ -396,40 +430,13 @@ loop:
 func preprocessMessageEvent(e *Event) {
 	e.Message = message.ParseMessage(e.NativeMessage)
 
-	processAt := func() { // 处理是否at机器人
-		e.IsToMe = false
-		for i, m := range e.Message {
-			if m.Type == "at" {
-				qq, _ := strconv.ParseInt(m.Data["qq"], 10, 64)
-				if qq == e.SelfID {
-					e.IsToMe = true
-					e.Message = append(e.Message[:i], e.Message[i+1:]...)
-					return
-				}
-			}
-		}
-		if e.Message == nil || len(e.Message) == 0 || e.Message[0].Type != "text" {
-			return
-		}
-		first := e.Message[0]
-		first.Data["text"] = strings.TrimLeft(first.Data["text"], " ") // Trim!
-		text := first.Data["text"]
-		for _, nickname := range BotConfig.NickName {
-			if strings.HasPrefix(text, nickname) {
-				e.IsToMe = true
-				first.Data["text"] = text[len(nickname):]
-				return
-			}
-		}
-	}
-
 	switch {
 	case e.DetailType == "group":
 		log.Infof("[bot] 收到群(%v)消息 %v : %v", e.GroupID, e.Sender.String(), e.RawMessage)
-		processAt()
+		processAtEvent(e)
 	case e.DetailType == "guild" && e.SubType == "channel":
 		log.Infof("[bot] 收到频道(%v)(%v-%v)消息 %v : %v", e.GroupID, e.GuildID, e.ChannelID, e.Sender.String(), e.Message)
-		processAt()
+		processAtEvent(e)
 	default:
 		e.IsToMe = true // 私聊也判断为at
 		log.Infof("[bot] 收到私聊消息 %v : %v", e.Sender.String(), e.RawMessage)
