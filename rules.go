@@ -7,9 +7,53 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wdvxdr1123/ZeroBot/extension/control"
 	"github.com/wdvxdr1123/ZeroBot/message"
 	"github.com/wdvxdr1123/ZeroBot/utils/helper"
 )
+
+const (
+	// StorageFolder 插件控制数据目录
+	StorageFolder = "data/control/"
+	// Md5File ...
+	Md5File = StorageFolder + "stor.spb"
+	dbfile  = StorageFolder + "plugins.db"
+	lnfile  = StorageFolder + "lnperpg.txt"
+)
+
+var managers = control.NewManager[*Ctx](dbfile)
+
+func newControl(service string, o *control.Option[*Ctx]) Rule {
+	c := managers.NewControl(service, o)
+	return func(ctx *Ctx) bool {
+		ctx.State["manager"] = c
+		return c.Handler(ctx.Event.GroupID, ctx.Event.UserID)
+	}
+}
+
+// Lookup 查找插件
+func Lookup(service string) (*control.Control[*Ctx], bool) {
+	_, ok := briefMap[service]
+	if ok {
+		return managers.Lookup(briefMap[service])
+	}
+	return managers.Lookup(service)
+}
+
+// Response 开启响应
+func Response(groupID int64) error {
+	return managers.Response(groupID)
+}
+
+// Silence 关闭响应
+func Silence(groupID int64) error {
+	return managers.Silence(groupID)
+}
+
+// CanResponse 是否可以响应
+func CanResponse(groupID int64) bool {
+	return managers.CanResponse(groupID)
+}
 
 // Type check the ctx.Event's type
 func Type(type_ string) Rule {
