@@ -360,3 +360,18 @@ func (c *Control[Ctx]) Flip() error {
 	}
 	return err
 }
+
+// Handler returns the handler of the plugin
+func (c *Control[Ctx]) Handler(groupID, userID int64) bool {
+	if c.Manager.IsBlocked(userID) {
+		return false
+	}
+	grp := groupID
+	if grp == 0 {
+		grp = -userID
+	}
+	if !c.Manager.CanResponse(grp) || c.IsBanned(grp, userID) {
+		return false
+	}
+	return c.IsEnable(grp)
+}
