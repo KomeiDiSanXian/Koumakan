@@ -1,5 +1,16 @@
 package zero
 
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"unicode"
+
+	"github.com/FloatTech/floatbox/file"
+	"github.com/sirupsen/logrus"
+	"github.com/wdvxdr1123/ZeroBot/extension/control"
+)
+
 // New 生成空引擎
 func New() Engine {
 	return &ZeroEngine{
@@ -18,6 +29,77 @@ type ZeroEngine struct {
 	postHandler []Handler
 	block       bool
 	matchers    []IMatcher
+	prio        int
+	service     string
+	datafolder  string
+}
+
+var prioMap = make(map[int]string)      // prioMap is map[prio]service
+var briefMap = make(map[string]string)  // briefMap is map[brief]service
+var folderMap = make(map[string]string) // folderMap is map[folder]service
+var extraMap = make(map[int16]string)   // extraMap is map[gid]service
+
+func newEngine(service string, prio int, o *control.Option[*Ctx]) Engine {
+	eng := &ZeroEngine{
+		prio:    prio,
+		service: service,
+	}
+	s, ok := prioMap[prio]
+	if ok {
+		panic(fmt.Sprint("prio", prio, "is used by", s))
+	}
+	prioMap[prio] = service
+	eng.UsePreHandler(
+		func(ctx *Ctx) bool {
+			// 防止自触发
+			return ctx.Event.UserID != ctx.Event.SelfID || ctx.Event.PostType != "message"
+		},
+		newControl(service, o),
+	)
+	if o.Brief != "" {
+		s, ok := briefMap[o.Brief]
+		if ok {
+			panic("Brief \"" + o.Brief + "\" of service " + service + " has been required by service " + s)
+		}
+		briefMap[o.Brief] = service
+	}
+	if o.Extra != 0 {
+		s, ok := extraMap[o.Extra]
+		if ok {
+			panic("Extra " + strconv.Itoa(int(o.Extra)) + " of service " + service + " has been required by service " + s)
+		}
+		extraMap[o.Extra] = service
+	}
+
+	switch {
+	case o.PublicDataFolder != "":
+		if unicode.IsLower([]rune(o.PublicDataFolder)[0]) {
+			panic("public data folder " + o.PublicDataFolder + " must start with an upper case letter")
+		}
+		eng.datafolder = "data/" + o.PublicDataFolder + "/"
+	case o.PrivateDataFolder != "":
+		if unicode.IsUpper([]rune(o.PrivateDataFolder)[0]) {
+			panic("private data folder " + o.PrivateDataFolder + " must start with an lower case letter")
+		}
+	default:
+		eng.datafolder = "data/zbp/"
+	}
+
+	if eng.datafolder != "data/zbp/" {
+		s, ok := folderMap[eng.datafolder]
+		if ok {
+			panic("folder " + eng.datafolder + " has been required by service " + s)
+		}
+		folderMap[eng.datafolder] = service
+	}
+	if file.IsNotExist(eng.datafolder) {
+		err := os.MkdirAll(eng.datafolder, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+	logrus.Debugf("[ZeroBot] Service %s has been loaded, data path: %s", service, eng.datafolder)
+	return eng
 }
 
 func (e *ZeroEngine) getBlock() bool { return e.block }
@@ -33,6 +115,18 @@ func (e *ZeroEngine) Delete() {
 	for _, m := range e.matchers {
 		m.Delete()
 	}
+}
+
+// DataFolder 获取当前插件的数据文件夹
+func (e *ZeroEngine) DataFolder() string { return e.datafolder }
+
+// IsEnabled 获取当前插件是否启用
+func (e *ZeroEngine) IsEnabled(id int64) bool {
+	c, ok := managers.Lookup(e.service)
+	if !ok {
+		return false
+	}
+	return c.IsEnable(id)
 }
 
 func (e *ZeroEngine) SetBlock(block bool) Engine {

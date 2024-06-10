@@ -12,7 +12,6 @@ type EngineBase interface {
 	UsePreHandler(rules ...Rule)       // 添加新 PreHandler(Rule)
 	UseMidHandler(rules ...Rule)       // 添加新 MidHandler(Rule)
 	UsePostHandler(handler ...Handler) // 添加新 PostHandler(Rule)
-
 }
 
 type getter interface {
@@ -28,6 +27,8 @@ type Engine interface {
 	EngineBase
 	EngineTrigger
 	EngineMessage
+	DataFolder() string      // 获取当前插件的数据文件夹
+	IsEnabled(id int64) bool // 获取当前插件是否启用
 }
 
 // EngineTrigger 触发器接口
