@@ -65,6 +65,16 @@ func NewManager[Ctx any](dbpath string) (m Manager[Ctx]) {
 	return
 }
 
+// Lookup returns the control by service
+//
+// if service is not found, return false
+func (m *Manager[Ctx]) Lookup(service string) (*Control[Ctx], bool) {
+	m.RLock()
+	defer m.RUnlock()
+	ctrl, ok := m.Controls[service]
+	return ctrl, ok
+}	
+
 // initBlock initializes the block table
 func (m *Manager[Ctx]) initBlock() error {
 	return m.DataBase.Create("__block", &BlockStatus{})
