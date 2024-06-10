@@ -8,7 +8,7 @@ type Option[Ctx any] struct {
 	HelpText          string        // 帮助文本
 	Banner            string        // 背景图
 	PrivateDataFolder string        // 私有数据文件夹
-	PubicDataFolder   string        // 公共数据文件夹
+	PublicDataFolder  string        // 公共数据文件夹
 	OnEnable          func(ctx Ctx) // 启用时的回调
 	OnDisable         func(ctx Ctx) // 禁用时的回调
 }
