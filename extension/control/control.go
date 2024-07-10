@@ -149,7 +149,7 @@ func (c *Control[Ctx]) IsEnable(groupID int64) bool {
 	return isDisable == 0
 }
 
-// Ban bans plugin permisson for user in group
+// Ban bans plugin permission for user in group
 //
 // if groupID is 0, it will ban the plugin for all groups
 func (c *Control[Ctx]) Ban(groupID, userID int64) {
@@ -192,7 +192,7 @@ func (c *Control[Ctx]) Ban(groupID, userID int64) {
 	}
 }
 
-// Permit permits plugin permisson for user in group
+// Permit permits plugin permission for user in group
 //
 // if groupID is 0, it will permit the plugin for all groups
 func (c *Control[Ctx]) Permit(groupID, userID int64) {

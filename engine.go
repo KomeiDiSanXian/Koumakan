@@ -7,8 +7,8 @@ import (
 	"unicode"
 
 	"github.com/FloatTech/floatbox/file"
-	"github.com/sirupsen/logrus"
 	"github.com/KomeiDiSanXian/Koumakan/extension/control"
+	"github.com/sirupsen/logrus"
 )
 
 // New 生成空引擎
@@ -34,10 +34,12 @@ type ZeroEngine struct {
 	datafolder  string
 }
 
-var prioMap = make(map[int]string)      // prioMap is map[prio]service
-var briefMap = make(map[string]string)  // briefMap is map[brief]service
-var folderMap = make(map[string]string) // folderMap is map[folder]service
-var extraMap = make(map[int16]string)   // extraMap is map[gid]service
+var (
+	prioMap   = make(map[int]string)    // prioMap is map[prio]service
+	briefMap  = make(map[string]string) // briefMap is map[brief]service
+	folderMap = make(map[string]string) // folderMap is map[folder]service
+	extraMap  = make(map[int16]string)  // extraMap is map[gid]service
+)
 
 func newEngine(service string, prio int, o *control.Option[*Ctx]) Engine {
 	eng := &ZeroEngine{
@@ -93,7 +95,7 @@ func newEngine(service string, prio int, o *control.Option[*Ctx]) Engine {
 		folderMap[eng.datafolder] = service
 	}
 	if file.IsNotExist(eng.datafolder) {
-		err := os.MkdirAll(eng.datafolder, 0755)
+		err := os.MkdirAll(eng.datafolder, 0o755)
 		if err != nil {
 			panic(err)
 		}

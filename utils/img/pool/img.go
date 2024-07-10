@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/FloatTech/floatbox/web"
-	"github.com/sirupsen/logrus"
 	"github.com/KomeiDiSanXian/Koumakan/message"
 	"github.com/KomeiDiSanXian/Koumakan/utils/ctxext"
+	"github.com/sirupsen/logrus"
 )
 
 const cacheurl = "https://gchat.qpic.cn/gchatpic_new//%s/0"
@@ -23,9 +23,7 @@ var (
 	ErrGetMsg          = errors.New("get msg error")
 )
 
-var (
-	oldimgre = regexp.MustCompile(`^[0-9A-F-]+$`)
-)
+var oldimgre = regexp.MustCompile(`^[0-9A-F-]+$`)
 
 // Image 图片数据
 type Image struct {

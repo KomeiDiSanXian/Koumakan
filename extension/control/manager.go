@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FloatTech/sqlite"
+	sql "github.com/FloatTech/sqlite"
 	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
@@ -32,7 +32,7 @@ func NewManager[Ctx any](dbpath string) (m Manager[Ctx]) {
 	case dbpath == "":
 		dbpath = "ctrl.db"
 	case strings.HasSuffix(dbpath, "/"):
-		err := os.MkdirAll(dbpath, 0755)
+		err := os.MkdirAll(dbpath, 0o755)
 		if err != nil {
 			panic(err)
 		}
@@ -40,7 +40,7 @@ func NewManager[Ctx any](dbpath string) (m Manager[Ctx]) {
 	default:
 		i := strings.LastIndex(dbpath, "/")
 		if i > 0 {
-			err := os.MkdirAll(dbpath[:i], 0755)
+			err := os.MkdirAll(dbpath[:i], 0o755)
 			if err != nil {
 				panic(err)
 			}
@@ -73,7 +73,7 @@ func (m *Manager[Ctx]) Lookup(service string) (*Control[Ctx], bool) {
 	defer m.RUnlock()
 	ctrl, ok := m.Controls[service]
 	return ctrl, ok
-}	
+}
 
 // initBlock initializes the block table
 func (m *Manager[Ctx]) initBlock() error {
