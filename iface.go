@@ -1,8 +1,8 @@
 package zero
 
 import (
-	"github.com/tidwall/gjson"
 	"github.com/KomeiDiSanXian/Koumakan/message"
+	"github.com/tidwall/gjson"
 )
 
 // EngineBase 基础接口
@@ -21,6 +21,13 @@ type getter interface {
 	getPostHandler() []Handler
 }
 
+// Lazy 懒加载接口
+type Lazy interface {
+	GetLazyData(filename string, isDataMustEqual bool) ([]byte, error)
+	GetCustomLazyData(dataurl, filename string) ([]byte, error)
+	InitWhenNoError(errfun func() error, do func())
+}
+
 // Engine 引擎接口
 type Engine interface {
 	getter
@@ -29,6 +36,8 @@ type Engine interface {
 	EngineMessage
 	DataFolder() string      // 获取当前插件的数据文件夹
 	IsEnabled(id int64) bool // 获取当前插件是否启用
+
+	Lazy
 }
 
 // EngineTrigger 触发器接口
