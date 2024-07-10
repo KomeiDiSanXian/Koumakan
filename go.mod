@@ -6,6 +6,7 @@ require (
 	github.com/FloatTech/ttl v0.0.0-20230307105452-d6f7b2b647d1
 	github.com/RomiChan/syncx v0.0.0-20240418144900-b7402ffdebc7
 	github.com/RomiChan/websocket v1.4.3-0.20220227141055-9b2c6168c9c5
+	github.com/fumiama/go-registry v0.2.7
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
 	github.com/syndtr/goleveldb v1.0.0
@@ -17,7 +18,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fumiama/cron v1.3.0 // indirect
 	github.com/fumiama/go-base16384 v1.7.0 // indirect
-	github.com/fumiama/go-registry v0.2.7 // indirect
 	github.com/fumiama/go-simple-protobuf v0.2.0 // indirect
 	github.com/fumiama/gofastTEA v0.0.10 // indirect
 	github.com/fumiama/terasu v0.0.0-20240507144117-547a591149c0 // indirect
