@@ -1,73 +1,70 @@
-// Package ctxext zb context 扩展
-package ctxext
+package zero
 
 import (
 	"encoding/json"
 
-	zero "github.com/KomeiDiSanXian/Koumakan"
 	"github.com/KomeiDiSanXian/Koumakan/message"
 	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
-//nolint:revive
 type (
-	NoCtxGetMsg  func(int64) zero.Message
-	NoCtxSendMsg func(any) int64
+	NoCtxGetMsg  func(int64) Message // NoCtxGetMsg ...
+	NoCtxSendMsg func(any) int64    // NoCtxSendMsg ...
 )
 
 // GetMessage ...
-func GetMessage(ctx *zero.Ctx) NoCtxGetMsg {
-	return func(id int64) zero.Message {
+func GetMessage(ctx *Ctx) NoCtxGetMsg {
+	return func(id int64) Message {
 		return ctx.GetMessage(message.NewMessageIDFromInteger(id))
 	}
 }
 
 // GetFirstMessageInForward ...
-func GetFirstMessageInForward(ctx *zero.Ctx) NoCtxGetMsg {
-	return func(id int64) zero.Message {
+func GetFirstMessageInForward(ctx *Ctx) NoCtxGetMsg {
+	return func(id int64) Message {
 		msg := GetMessage(ctx)(id)
 		if len(msg.Elements) == 0 {
-			return zero.Message{}
+			return Message{}
 		}
 		msgs := ctx.GetForwardMessage(msg.Elements[0].Data["id"]).Get("messages").Array()
 		if len(msgs) == 0 {
-			return zero.Message{}
+			return Message{}
 		}
-		m := zero.Message{
+		m := Message{
 			Elements: message.ParseMessage(helper.StringToBytes(msgs[0].Get("content").Raw)),
-			Sender:   &zero.User{},
+			Sender:   &User{},
 		}
 		err := json.Unmarshal(helper.StringToBytes(msgs[0].Get("sender").Raw), m.Sender)
 		if err != nil {
-			return zero.Message{}
+			return Message{}
 		}
 		return m
 	}
 }
 
 // SendTo ...
-func SendTo(ctx *zero.Ctx, user int64) NoCtxSendMsg {
+func SendTo(ctx *Ctx, user int64) NoCtxSendMsg {
 	return func(msg any) int64 {
 		return ctx.SendPrivateMessage(user, msg)
 	}
 }
 
 // Send ...
-func Send(ctx *zero.Ctx) NoCtxSendMsg {
+func Send(ctx *Ctx) NoCtxSendMsg {
 	return func(msg any) int64 {
 		return ctx.Send(msg).ID()
 	}
 }
 
 // SendToSelf ...
-func SendToSelf(ctx *zero.Ctx) NoCtxSendMsg {
+func SendToSelf(ctx *Ctx) NoCtxSendMsg {
 	return func(msg any) int64 {
 		return ctx.SendPrivateMessage(ctx.Event.SelfID, msg)
 	}
 }
 
 // FakeSenderForwardNode ...
-func FakeSenderForwardNode(ctx *zero.Ctx, msgs ...message.MessageSegment) message.MessageSegment {
+func FakeSenderForwardNode(ctx *Ctx, msgs ...message.MessageSegment) message.MessageSegment {
 	return message.CustomNode(
 		ctx.CardOrNickName(ctx.Event.UserID),
 		ctx.Event.UserID,
@@ -75,7 +72,7 @@ func FakeSenderForwardNode(ctx *zero.Ctx, msgs ...message.MessageSegment) messag
 }
 
 // SendFakeForwardToGroup ...
-func SendFakeForwardToGroup(ctx *zero.Ctx, msgs ...message.MessageSegment) NoCtxSendMsg {
+func SendFakeForwardToGroup(ctx *Ctx, msgs ...message.MessageSegment) NoCtxSendMsg {
 	return func(msg any) int64 {
 		return ctx.SendGroupForwardMessage(ctx.Event.GroupID, message.Message{
 			FakeSenderForwardNode(ctx, msg.(message.Message)...),

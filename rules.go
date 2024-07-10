@@ -12,15 +12,6 @@ import (
 	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
-const (
-	// StorageFolder 插件控制数据目录
-	StorageFolder = "data/control/"
-	// Md5File ...
-	Md5File = StorageFolder + "stor.spb"
-	dbfile  = StorageFolder + "plugins.db"
-	lnfile  = StorageFolder + "lnperpg.txt"
-)
-
 var managers = control.NewManager[*Ctx](dbfile)
 
 func newControl(service string, o *control.Option[*Ctx]) Rule {

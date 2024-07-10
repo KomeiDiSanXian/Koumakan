@@ -5,15 +5,16 @@ import (
 
 	"github.com/FloatTech/floatbox/file"
 	"github.com/KomeiDiSanXian/Koumakan/message"
-	"github.com/KomeiDiSanXian/Koumakan/utils/ctxext"
 	"github.com/sirupsen/logrus"
+
+	zero "github.com/KomeiDiSanXian/Koumakan"
 )
 
 // SendImageFromPool ...
-func SendImageFromPool(imgname, imgpath string, genimg func() error, send ctxext.NoCtxSendMsg, get ctxext.NoCtxGetMsg) error {
+func SendImageFromPool(imgname, imgpath string, genimg func() error, send zero.NoCtxSendMsg, get zero.NoCtxGetMsg) error {
 	m, err := GetImage(imgname)
 	if err != nil {
-		logrus.Debugln("[ctxext.img]", err)
+		logrus.Debugln("[zero.img]", err)
 		if file.IsNotExist(imgpath) {
 			err := genimg()
 			if err != nil {
@@ -39,10 +40,10 @@ func SendImageFromPool(imgname, imgpath string, genimg func() error, send ctxext
 }
 
 // SendRemoteImageFromPool ...
-func SendRemoteImageFromPool(imgname, imgurl string, send ctxext.NoCtxSendMsg, get ctxext.NoCtxGetMsg) error {
+func SendRemoteImageFromPool(imgname, imgurl string, send zero.NoCtxSendMsg, get zero.NoCtxGetMsg) error {
 	m, err := GetImage(imgname)
 	if err != nil {
-		logrus.Debugln("[ctxext.img]", err)
+		logrus.Debugln("[zero.img]", err)
 		m.SetFile(imgurl)
 		if err == ErrImgFileOutdated {
 			get = nil

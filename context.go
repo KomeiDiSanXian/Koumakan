@@ -32,6 +32,11 @@ func ExposeCaller[T any](ctx *Ctx) *T {
 	return (*T)(*(*unsafe.Pointer)(unsafe.Add(unsafe.Pointer(&ctx.caller), unsafe.Sizeof(uintptr(0)))))
 }
 
+// HookCtxCaller change ctx's caller to hook
+func HookCaller(ctx *Ctx, caller APICaller) {
+	ctx.caller = caller
+}
+
 // decoder 反射获取的数据
 type decoder []dec
 

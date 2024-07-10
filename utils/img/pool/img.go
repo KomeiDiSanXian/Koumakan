@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/FloatTech/floatbox/web"
+	zero "github.com/KomeiDiSanXian/Koumakan"
 	"github.com/KomeiDiSanXian/Koumakan/message"
-	"github.com/KomeiDiSanXian/Koumakan/utils/ctxext"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,7 +55,7 @@ func GetImage(name string) (m *Image, err error) {
 }
 
 // NewImage context name file
-func NewImage(send ctxext.NoCtxSendMsg, get ctxext.NoCtxGetMsg, name, f string) (m *Image, hassent bool, err error) {
+func NewImage(send zero.NoCtxSendMsg, get zero.NoCtxGetMsg, name, f string) (m *Image, hassent bool, err error) {
 	m = new(Image)
 	m.n = name
 	m.SetFile(f)
@@ -100,7 +100,7 @@ func (m *Image) SetFile(f string) {
 }
 
 // Push context
-func (m *Image) Push(send ctxext.NoCtxSendMsg, get ctxext.NoCtxGetMsg) (hassent bool, err error) {
+func (m *Image) Push(send zero.NoCtxSendMsg, get zero.NoCtxGetMsg) (hassent bool, err error) {
 	id := send(message.Message{message.Image(m.f)})
 	if id == 0 {
 		err = ErrSendImg
