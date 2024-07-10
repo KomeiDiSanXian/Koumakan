@@ -1,4 +1,4 @@
-module github.com/wdvxdr1123/ZeroBot
+module github.com/KomeiDiSanXian/Koumakan
 
 go 1.19
 

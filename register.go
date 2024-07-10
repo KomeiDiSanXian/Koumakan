@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 
 	"github.com/sirupsen/logrus"
-	"github.com/wdvxdr1123/ZeroBot/extension/control"
+	"github.com/KomeiDiSanXian/Koumakan/extension/control"
 )
 
 var (

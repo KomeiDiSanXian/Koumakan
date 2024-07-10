@@ -4,11 +4,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/driver"
-	_ "github.com/wdvxdr1123/ZeroBot/example/command"
-	_ "github.com/wdvxdr1123/ZeroBot/example/music"
-	_ "github.com/wdvxdr1123/ZeroBot/example/repeat"
+	zero "github.com/KomeiDiSanXian/Koumakan"
+	"github.com/KomeiDiSanXian/Koumakan/driver"
+	_ "github.com/KomeiDiSanXian/Koumakan/example/command"
+	_ "github.com/KomeiDiSanXian/Koumakan/example/music"
+	_ "github.com/KomeiDiSanXian/Koumakan/example/repeat"
 )
 
 func init() {

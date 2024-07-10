@@ -8,7 +8,7 @@ import (
 
 	"github.com/FloatTech/floatbox/file"
 	"github.com/sirupsen/logrus"
-	"github.com/wdvxdr1123/ZeroBot/extension/control"
+	"github.com/KomeiDiSanXian/Koumakan/extension/control"
 )
 
 // New 生成空引擎

@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
+	zero "github.com/KomeiDiSanXian/Koumakan"
 )
 
 // Map is like a Go map[interface{}]interface{} but is safe for concurrent use

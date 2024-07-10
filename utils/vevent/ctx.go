@@ -4,7 +4,7 @@ import (
 	"sync"
 	"unsafe"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
+	zero "github.com/KomeiDiSanXian/Koumakan"
 )
 
 // Ctx represents the Context which hold the event.

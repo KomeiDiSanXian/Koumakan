@@ -14,8 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 
-	"github.com/wdvxdr1123/ZeroBot/message"
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
+	"github.com/KomeiDiSanXian/Koumakan/message"
+	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
 // Config is config of zero bot

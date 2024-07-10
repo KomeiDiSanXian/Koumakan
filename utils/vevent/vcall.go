@@ -4,7 +4,7 @@ package vevent
 import (
 	"unsafe"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
+	zero "github.com/KomeiDiSanXian/Koumakan"
 )
 
 // APICallerReturnHook is a caller middleware

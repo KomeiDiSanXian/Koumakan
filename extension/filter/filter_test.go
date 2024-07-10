@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
-	zero "github.com/wdvxdr1123/ZeroBot"
+	zero "github.com/KomeiDiSanXian/Koumakan"
 )
 
 func TestFilter(t *testing.T) {

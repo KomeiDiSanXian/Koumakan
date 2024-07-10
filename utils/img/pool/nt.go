@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
+	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
 const (

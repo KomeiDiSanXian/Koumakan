@@ -10,8 +10,8 @@ import (
 
 	"github.com/FloatTech/floatbox/web"
 	"github.com/sirupsen/logrus"
-	"github.com/wdvxdr1123/ZeroBot/message"
-	"github.com/wdvxdr1123/ZeroBot/utils/ctxext"
+	"github.com/KomeiDiSanXian/Koumakan/message"
+	"github.com/KomeiDiSanXian/Koumakan/utils/ctxext"
 )
 
 const cacheurl = "https://gchat.qpic.cn/gchatpic_new//%s/0"

@@ -4,9 +4,9 @@ package ctxext
 import (
 	"encoding/json"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/message"
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
+	zero "github.com/KomeiDiSanXian/Koumakan"
+	"github.com/KomeiDiSanXian/Koumakan/message"
+	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
 //nolint:revive

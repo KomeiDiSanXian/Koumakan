@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wdvxdr1123/ZeroBot/extension/control"
-	"github.com/wdvxdr1123/ZeroBot/message"
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
+	"github.com/KomeiDiSanXian/Koumakan/extension/control"
+	"github.com/KomeiDiSanXian/Koumakan/message"
+	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
 const (

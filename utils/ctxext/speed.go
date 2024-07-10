@@ -4,9 +4,9 @@ import (
 	"time"
 	"unsafe"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/extension/rate"
-	"github.com/wdvxdr1123/ZeroBot/extension/single"
+	zero "github.com/KomeiDiSanXian/Koumakan"
+	"github.com/KomeiDiSanXian/Koumakan/extension/rate"
+	"github.com/KomeiDiSanXian/Koumakan/extension/single"
 )
 
 // DefaultSingle 默认反并发处理

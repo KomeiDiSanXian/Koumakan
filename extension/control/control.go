@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
+	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
 var banCache = make(map[uint64]bool)

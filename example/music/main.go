@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/example/manager"
-	"github.com/wdvxdr1123/ZeroBot/extension"
-	"github.com/wdvxdr1123/ZeroBot/extension/rate"
-	"github.com/wdvxdr1123/ZeroBot/extension/single"
-	"github.com/wdvxdr1123/ZeroBot/message"
+	zero "github.com/KomeiDiSanXian/Koumakan"
+	"github.com/KomeiDiSanXian/Koumakan/example/manager"
+	"github.com/KomeiDiSanXian/Koumakan/extension"
+	"github.com/KomeiDiSanXian/Koumakan/extension/rate"
+	"github.com/KomeiDiSanXian/Koumakan/extension/single"
+	"github.com/KomeiDiSanXian/Koumakan/message"
 )
 
 var (

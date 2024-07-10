@@ -2,7 +2,7 @@ package zero
 
 import (
 	"github.com/tidwall/gjson"
-	"github.com/wdvxdr1123/ZeroBot/message"
+	"github.com/KomeiDiSanXian/Koumakan/message"
 )
 
 // EngineBase 基础接口
