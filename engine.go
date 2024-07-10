@@ -20,6 +20,14 @@ type Engine struct {
 	matchers    []*Matcher
 }
 
+func init() {
+	defaultEngine.UsePreHandler(
+		func(ctx *Ctx) bool {
+			return ctx.Event.UserID != ctx.Event.SelfID || ctx.Event.PostType != "message"
+		},
+	)
+}
+
 // Delete 移除该 Engine 注册的所有 Matchers
 func (e *Engine) Delete() {
 	for _, m := range e.matchers {
