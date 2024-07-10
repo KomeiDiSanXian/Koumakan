@@ -174,7 +174,7 @@ func (e *ZeroEngine) On(typ string, rules ...Rule) IMatcher {
 		Engine: e,
 	}
 	e.matchers = append(e.matchers, matcher)
-	return StoreMatcher(matcher)
+	return StoreMatcher(matcher).SetPriority(e.prio)
 }
 
 // OnMessage 消息触发器
