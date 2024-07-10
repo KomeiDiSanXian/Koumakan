@@ -1,4 +1,4 @@
-package zero
+package koumakan
 
 import (
 	"github.com/KomeiDiSanXian/Koumakan/message"
