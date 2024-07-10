@@ -4,7 +4,8 @@ import (
 	"runtime"
 
 	"github.com/RomiChan/syncx"
-	zero "github.com/wdvxdr1123/ZeroBot"
+
+	zero "github.com/KomeiDiSanXian/Koumakan"
 )
 
 // Option 配置项
@@ -41,7 +42,7 @@ func New[K comparable](op ...Option[K]) *Single[K] {
 }
 
 // Apply 为指定 Engine 添加反并发功能
-func (s *Single[K]) Apply(engine *zero.Engine) {
+func (s *Single[K]) Apply(engine zero.Engine) {
 	engine.UseMidHandler(func(ctx *zero.Ctx) bool {
 		if s.key == nil {
 			return true

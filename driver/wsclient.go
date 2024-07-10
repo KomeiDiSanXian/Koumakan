@@ -15,13 +15,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
+	zero "github.com/KomeiDiSanXian/Koumakan"
+	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
-var (
-	nullResponse = zero.APIResponse{}
-)
+var nullResponse = zero.APIResponse{}
 
 // WSClient ...
 type WSClient struct {

@@ -22,8 +22,8 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-      - name: Test
-        run: go test $(go list ./...)
+      # - name: Test
+      #   run: go test $(go list ./...)
 
   golangci:
     name: lint

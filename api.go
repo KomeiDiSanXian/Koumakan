@@ -1,4 +1,4 @@
-package zero
+package koumakan
 
 import (
 	"bytes"
@@ -14,8 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 
-	"github.com/wdvxdr1123/ZeroBot/message"
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
+	"github.com/KomeiDiSanXian/Koumakan/message"
+	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
 
 var base64Reg = regexp.MustCompile(`"type":"image","data":\{"file":"base64://[\w/\+=]+`)
@@ -23,7 +23,7 @@ var base64Reg = regexp.MustCompile(`"type":"image","data":\{"file":"base64://[\w
 // formatMessage 格式化消息数组
 //
 //	仅用在 log 打印
-func formatMessage(msg interface{}) string {
+func formatMessage(msg any) string {
 	switch m := msg.(type) {
 	case string:
 		return m
@@ -67,7 +67,7 @@ func (ctx *Ctx) CallAction(action string, params Params) APIResponse {
 
 // SendGroupMessage 发送群消息
 // https://github.com/botuniverse/onebot-11/blob/master/api/public.md#send_group_msg-%E5%8F%91%E9%80%81%E7%BE%A4%E6%B6%88%E6%81%AF
-func (ctx *Ctx) SendGroupMessage(groupID int64, message interface{}) int64 {
+func (ctx *Ctx) SendGroupMessage(groupID int64, message any) int64 {
 	rsp := ctx.CallAction("send_group_msg", Params{ // 调用并保存返回值
 		"group_id": groupID,
 		"message":  message,
@@ -81,7 +81,7 @@ func (ctx *Ctx) SendGroupMessage(groupID int64, message interface{}) int64 {
 
 // SendPrivateMessage 发送私聊消息
 // https://github.com/botuniverse/onebot-11/blob/master/api/public.md#send_private_msg-%E5%8F%91%E9%80%81%E7%A7%81%E8%81%8A%E6%B6%88%E6%81%AF
-func (ctx *Ctx) SendPrivateMessage(userID int64, message interface{}) int64 {
+func (ctx *Ctx) SendPrivateMessage(userID int64, message any) int64 {
 	rsp := ctx.CallAction("send_private_msg", Params{
 		"user_id": userID,
 		"message": message,
@@ -95,9 +95,7 @@ func (ctx *Ctx) SendPrivateMessage(userID int64, message interface{}) int64 {
 
 // DeleteMessage 撤回消息
 // https://github.com/botuniverse/onebot-11/blob/master/api/public.md#delete_msg-%E6%92%A4%E5%9B%9E%E6%B6%88%E6%81%AF
-//
-//nolint:interfacer
-func (ctx *Ctx) DeleteMessage(messageID interface{}) {
+func (ctx *Ctx) DeleteMessage(messageID any) {
 	ctx.CallAction("delete_msg", Params{
 		"message_id": messageID,
 	})
@@ -105,9 +103,7 @@ func (ctx *Ctx) DeleteMessage(messageID interface{}) {
 
 // GetMessage 获取消息
 // https://github.com/botuniverse/onebot-11/blob/master/api/public.md#get_msg-%E8%8E%B7%E5%8F%96%E6%B6%88%E6%81%AF
-//
-//nolint:interfacer
-func (ctx *Ctx) GetMessage(messageID interface{}) Message {
+func (ctx *Ctx) GetMessage(messageID any) Message {
 	rsp := ctx.CallAction("get_msg", Params{
 		"message_id": messageID,
 	}).Data
@@ -475,7 +471,7 @@ func (ctx *Ctx) SendPrivateForwardMessage(userID int64, message message.Message)
 // ForwardFriendSingleMessage 转发单条消息到好友
 //
 // https://llonebot.github.io/zh-CN/develop/extends_api
-func (ctx *Ctx) ForwardFriendSingleMessage(userID int64, messageID interface{}) APIResponse {
+func (ctx *Ctx) ForwardFriendSingleMessage(userID int64, messageID any) APIResponse {
 	return ctx.CallAction("forward_friend_single_msg", Params{
 		"user_id":    userID,
 		"message_id": messageID,
@@ -485,7 +481,7 @@ func (ctx *Ctx) ForwardFriendSingleMessage(userID int64, messageID interface{}) 
 // ForwardGroupSingleMessage 转发单条消息到群
 //
 // https://llonebot.github.io/zh-CN/develop/extends_api
-func (ctx *Ctx) ForwardGroupSingleMessage(groupID int64, messageID interface{}) APIResponse {
+func (ctx *Ctx) ForwardGroupSingleMessage(groupID int64, messageID any) APIResponse {
 	return ctx.CallAction("forward_group_single_msg", Params{
 		"group_id":   groupID,
 		"message_id": messageID,
@@ -604,7 +600,7 @@ func (ctx *Ctx) GetWordSlices(content string) gjson.Result {
 }
 
 // SendGuildChannelMessage 发送频道消息
-func (ctx *Ctx) SendGuildChannelMessage(guildID, channelID string, message interface{}) string {
+func (ctx *Ctx) SendGuildChannelMessage(guildID, channelID string, message any) string {
 	rsp := ctx.CallAction("send_guild_channel_msg", Params{
 		"guild_id":   guildID,
 		"channel_id": channelID,
@@ -741,7 +737,7 @@ func (ctx *Ctx) GetFile(fileID string) gjson.Result {
 // https://llonebot.github.io/zh-CN/develop/extends_api
 //
 // emoji_id 参考 https://bot.q.qq.com/wiki/develop/api-v2/openapi/emoji/model.html#EmojiType
-func (ctx *Ctx) SetMessageEmojiLike(messageID interface{}, emojiID rune) error {
+func (ctx *Ctx) SetMessageEmojiLike(messageID any, emojiID rune) error {
 	ret := ctx.CallAction("set_msg_emoji_like", Params{
 		"message_id": messageID,
 		"emoji_id":   strconv.Itoa(int(emojiID)),

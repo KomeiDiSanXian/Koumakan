@@ -1,4 +1,4 @@
-package zero
+package koumakan
 
 import (
 	"encoding/json"
@@ -6,13 +6,13 @@ import (
 
 	"github.com/tidwall/gjson"
 
-	"github.com/wdvxdr1123/ZeroBot/message"
+	"github.com/KomeiDiSanXian/Koumakan/message"
 )
 
 // Modified from https://github.com/catsworld/qq-bot-api
 
 // Params is the params of call api
-type Params map[string]interface{}
+type Params map[string]any
 
 // APIResponse is the response of calling API
 // https://github.com/botuniverse/onebot-11/blob/master/communication/ws.md
@@ -62,7 +62,7 @@ type Event struct {
 	DetailType    string          `json:"-"`
 	MessageType   string          `json:"message_type"`
 	SubType       string          `json:"sub_type"`
-	MessageID     interface{}     `json:"-"`          // int64 in qq or string in guild
+	MessageID     any             `json:"-"`          // int64 in qq or string in guild
 	RawMessageID  json.RawMessage `json:"message_id"` // int64 in qq or string in guild
 	GroupID       int64           `json:"group_id"`
 	ChannelID     string          `json:"channel_id"`
@@ -73,7 +73,7 @@ type Event struct {
 	SelfID        int64           `json:"self_id"`
 	SelfTinyID    string          `json:"self_tiny_id"`
 	RawMessage    string          `json:"raw_message"` // raw_message is always string
-	Anonymous     interface{}     `json:"anonymous"`
+	Anonymous     any             `json:"anonymous"`
 	AnonymousFlag string          `json:"anonymous_flag"` // This field is deprecated and will get removed, see #11
 	Event         string          `json:"event"`
 	NoticeType    string          `json:"notice_type"` // This field is deprecated and will get removed, see #11
@@ -136,6 +136,3 @@ func (u *User) String() string {
 	}
 	return p + u.Name()
 }
-
-// H 是 Params 的简称
-type H = Params

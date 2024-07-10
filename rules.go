@@ -1,4 +1,4 @@
-package zero
+package koumakan
 
 import (
 	"hash/crc64"
@@ -7,9 +7,44 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wdvxdr1123/ZeroBot/message"
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
+	"github.com/KomeiDiSanXian/Koumakan/extension/control"
+	"github.com/KomeiDiSanXian/Koumakan/message"
+	"github.com/KomeiDiSanXian/Koumakan/utils/helper"
 )
+
+var managers = control.NewManager[*Ctx](dbfile)
+
+func newControl(service string, o *control.Option[*Ctx]) Rule {
+	c := managers.NewControl(service, o)
+	return func(ctx *Ctx) bool {
+		ctx.State["manager"] = c
+		return c.Handler(ctx.Event.GroupID, ctx.Event.UserID)
+	}
+}
+
+// Lookup 查找插件
+func Lookup(service string) (*control.Control[*Ctx], bool) {
+	_, ok := briefMap[service]
+	if ok {
+		return managers.Lookup(briefMap[service])
+	}
+	return managers.Lookup(service)
+}
+
+// Response 开启响应
+func Response(groupID int64) error {
+	return managers.Response(groupID)
+}
+
+// Silence 关闭响应
+func Silence(groupID int64) error {
+	return managers.Silence(groupID)
+}
+
+// CanResponse 是否可以响应
+func CanResponse(groupID int64) bool {
+	return managers.CanResponse(groupID)
+}
 
 // Type check the ctx.Event's type
 func Type(type_ string) Rule {
@@ -278,7 +313,7 @@ func GroupHigherPermission(gettarget func(ctx *Ctx) int64) Rule {
 
 // HasPicture 消息含有图片返回 true
 func HasPicture(ctx *Ctx) bool {
-	var urls = []string{}
+	urls := []string{}
 	for _, elem := range ctx.Event.Message {
 		if elem.Type == "image" {
 			if elem.Data["url"] != "" {

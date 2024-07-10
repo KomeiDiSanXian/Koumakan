@@ -1,10 +1,10 @@
-package zero
+package koumakan
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/wdvxdr1123/ZeroBot/message"
+	"github.com/KomeiDiSanXian/Koumakan/message"
 )
 
 func TestType(t *testing.T) {

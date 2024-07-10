@@ -3,7 +3,7 @@ package shell
 import (
 	"fmt"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
+	zero "github.com/KomeiDiSanXian/Koumakan"
 )
 
 // ShellRule Example

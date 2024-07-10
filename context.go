@@ -1,4 +1,4 @@
-package zero
+package koumakan
 
 import (
 	"fmt"
@@ -6,13 +6,13 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/wdvxdr1123/ZeroBot/message"
+	"github.com/KomeiDiSanXian/Koumakan/message"
 )
 
 // Ctx represents the Context which hold the event.
 // 代表上下文
 type Ctx struct {
-	ma     *Matcher
+	ma     IMatcher
 	Event  *Event
 	State  State
 	caller APICaller
@@ -23,13 +23,18 @@ type Ctx struct {
 }
 
 // GetMatcher ...
-func (ctx *Ctx) GetMatcher() *Matcher {
+func (ctx *Ctx) GetMatcher() IMatcher {
 	return ctx.ma
 }
 
 // ExposeCaller as *T, maybe panic if misused
 func ExposeCaller[T any](ctx *Ctx) *T {
 	return (*T)(*(*unsafe.Pointer)(unsafe.Add(unsafe.Pointer(&ctx.caller), unsafe.Sizeof(uintptr(0)))))
+}
+
+// HookCtxCaller change ctx's caller to hook
+func HookCaller(ctx *Ctx, caller APICaller) {
+	ctx.caller = caller
 }
 
 // decoder 反射获取的数据
@@ -44,7 +49,7 @@ type dec struct {
 var decoderCache = sync.Map{}
 
 // Parse 将 Ctx.State 映射到结构体
-func (ctx *Ctx) Parse(model interface{}) (err error) {
+func (ctx *Ctx) Parse(model any) (err error) {
 	var (
 		rv       = reflect.ValueOf(model).Elem()
 		t        = rv.Type()
@@ -86,7 +91,7 @@ func (ctx *Ctx) CheckSession() Rule {
 }
 
 // Send 快捷发送消息/合并转发
-func (ctx *Ctx) Send(msg interface{}) message.MessageID {
+func (ctx *Ctx) Send(msg any) message.MessageID {
 	event := ctx.Event
 	m, ok := msg.(message.Message)
 	if !ok {
@@ -153,12 +158,12 @@ func (ctx *Ctx) Block() {
 
 // Block 在 pre, rules, mid 阶段阻止后续触发
 func (ctx *Ctx) Break() {
-	ctx.ma.Break = true
+	ctx.ma.(*Matcher).Break = true // panic if not Matcher, should be fixed
 }
 
 // NoTimeout 处理时不设超时
 func (ctx *Ctx) NoTimeout() {
-	ctx.ma.NoTimeout = true
+	ctx.ma.(*Matcher).NoTimeout = true // panic if not Matcher, should be fixed
 }
 
 // MessageString 字符串消息便于Regex
