@@ -7,7 +7,7 @@ import (
 )
 
 // ForEachByPrio iterates through managers by their priority.
-func ForEachByPrio(iterator func(i int, manager *Control[*zero.Ctx]) bool) {
+func ForEachByPrio(iterator func(i int, manager IControl[*zero.Ctx]) bool) {
 	for i, v := range cpmp2lstbyprio() {
 		if !iterator(i, v) {
 			return
@@ -15,15 +15,15 @@ func ForEachByPrio(iterator func(i int, manager *Control[*zero.Ctx]) bool) {
 	}
 }
 
-func cpmp2lstbyprio() []*Control[*zero.Ctx] {
-	managers.RLock()
-	defer managers.RUnlock()
-	ret := make([]*Control[*zero.Ctx], 0, len(managers.M))
-	for _, v := range managers.M {
+func cpmp2lstbyprio() []IControl[*zero.Ctx] {
+	managers.rw.RLock()
+	defer managers.rw.RUnlock()
+	ret := make([]IControl[*zero.Ctx], 0, len(managers.m))
+	for _, v := range managers.m {
 		ret = append(ret, v)
 	}
 	sort.SliceStable(ret, func(i, j int) bool {
-		return enmap[ret[i].Service].prio < enmap[ret[j].Service].prio
+		return enmap[ret[i].GetServiceName()].prio < enmap[ret[j].GetServiceName()].prio
 	})
 	return ret
 }

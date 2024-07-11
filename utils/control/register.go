@@ -63,13 +63,13 @@ func Delete(service string) {
 	engine, ok := enmap[service]
 	if ok {
 		engine.Delete()
-		managers.RLock()
-		_, ok = managers.M[service]
-		managers.RUnlock()
+		managers.rw.RLock()
+		_, ok = managers.m[service]
+		managers.rw.RUnlock()
 		if ok {
-			managers.Lock()
-			delete(managers.M, service)
-			managers.Unlock()
+			managers.rw.Lock()
+			delete(managers.m, service)
+			managers.rw.Unlock()
 		}
 	}
 }

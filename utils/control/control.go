@@ -12,11 +12,21 @@ type Control[CTX any] struct {
 	Service string
 	Cache   map[int64]uint8 // map[gid]isdisable
 	Options Options[CTX]
-	Manager *Manager[CTX]
+	Manager IManager[CTX]
+}
+
+// GetServiceName returns the name of the service.
+func (c *Control[CTX]) GetServiceName() string {
+	return c.Service
+}
+
+// GetOptions returns the options of the service.
+func (c *Control[CTX]) GetOptions() Options[CTX] {
+	return c.Options
 }
 
 // NewControl returns Manager with settings.
-func (manager *Manager[CTX]) NewControl(service string, o *Options[CTX]) *Control[CTX] {
+func (manager *Manager[CTX]) NewControl(service string, o *Options[CTX]) IControl[CTX] {
 	var c GroupConfig
 	m := &Control[CTX]{
 		Service: service,
@@ -29,18 +39,18 @@ func (manager *Manager[CTX]) NewControl(service string, o *Options[CTX]) *Contro
 		}(),
 		Manager: manager,
 	}
-	manager.Lock()
-	defer manager.Unlock()
-	manager.M[service] = m
-	err := manager.D.Create(service, &c)
+	manager.RW().Lock()
+	defer manager.RW().Unlock()
+	manager.m[service] = m
+	err := manager.DB().Create(service, &c)
 	if err != nil {
 		panic(err)
 	}
-	err = manager.D.Create(service+"ban", &BanStatus{})
+	err = manager.DB().Create(service+"ban", &BanStatus{})
 	if err != nil {
 		panic(err)
 	}
-	err = manager.D.Find(m.Service, &c, "WHERE gid=0")
+	err = manager.DB().Find(m.Service, &c, "WHERE gid=0")
 	if err == nil {
 		if bits.RotateLeft64(uint64(c.Disable), 1)&1 == 1 {
 			m.Options.DisableOnDefault = !m.Options.DisableOnDefault
@@ -53,17 +63,17 @@ func (manager *Manager[CTX]) NewControl(service string, o *Options[CTX]) *Contro
 // groupID == 0 (ALL) will operate on all grps.
 func (m *Control[CTX]) Enable(groupID int64) {
 	var c GroupConfig
-	m.Manager.RLock()
-	err := m.Manager.D.Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(groupID, 10))
-	m.Manager.RUnlock()
+	m.Manager.RW().RLock()
+	err := m.Manager.DB().Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(groupID, 10))
+	m.Manager.RW().RUnlock()
 	if err != nil {
 		c.GroupID = groupID
 	}
 	c.Disable = int64(uint64(c.Disable) & 0xffffffff_fffffffe)
-	m.Manager.Lock()
+	m.Manager.RW().Lock()
 	m.Cache[groupID] = 0
-	err = m.Manager.D.Insert(m.Service, &c)
-	m.Manager.Unlock()
+	err = m.Manager.DB().Insert(m.Service, &c)
+	m.Manager.RW().Unlock()
 	if err != nil {
 		log.Errorf("[control] %v", err)
 	}
@@ -73,17 +83,17 @@ func (m *Control[CTX]) Enable(groupID int64) {
 // groupID == 0 (ALL) will operate on all grps.
 func (m *Control[CTX]) Disable(groupID int64) {
 	var c GroupConfig
-	m.Manager.RLock()
-	err := m.Manager.D.Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(groupID, 10))
-	m.Manager.RUnlock()
+	m.Manager.RW().RLock()
+	err := m.Manager.DB().Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(groupID, 10))
+	m.Manager.RW().RUnlock()
 	if err != nil {
 		c.GroupID = groupID
 	}
 	c.Disable |= 1
-	m.Manager.Lock()
+	m.Manager.RW().Lock()
 	m.Cache[groupID] = 1
-	err = m.Manager.D.Insert(m.Service, &c)
-	m.Manager.Unlock()
+	err = m.Manager.DB().Insert(m.Service, &c)
+	m.Manager.RW().Unlock()
 	if err != nil {
 		log.Errorf("[control] %v", err)
 	}
@@ -93,14 +103,14 @@ func (m *Control[CTX]) Disable(groupID int64) {
 // groupID == 0 (ALL) is not allowed.
 func (m *Control[CTX]) Reset(groupID int64) {
 	if groupID != 0 {
-		m.Manager.Lock()
+		m.Manager.RW().Lock()
 		if m.Options.DisableOnDefault {
 			m.Cache[groupID] = 1
 		} else {
 			m.Cache[groupID] = 0
 		}
-		err := m.Manager.D.Del(m.Service, "WHERE gid="+strconv.FormatInt(groupID, 10))
-		m.Manager.Unlock()
+		err := m.Manager.DB().Del(m.Service, "WHERE gid="+strconv.FormatInt(groupID, 10))
+		m.Manager.RW().Unlock()
 		if err != nil {
 			log.Errorf("[control] %v", err)
 		}
@@ -113,14 +123,14 @@ func (m *Control[CTX]) Reset(groupID int64) {
 func (m *Control[CTX]) IsEnabledIn(gid int64) bool {
 	var c GroupConfig
 	var err error
-	m.Manager.RLock()
+	m.Manager.RW().RLock()
 	isdisable, ok := m.Cache[0]
-	m.Manager.RUnlock()
+	m.Manager.RW().RUnlock()
 	if !ok {
-		m.Manager.RLock()
-		err = m.Manager.D.Find(m.Service, &c, "WHERE gid=0")
-		m.Manager.RUnlock()
-		m.Manager.Lock()
+		m.Manager.RW().RLock()
+		err = m.Manager.DB().Find(m.Service, &c, "WHERE gid=0")
+		m.Manager.RW().RUnlock()
+		m.Manager.RW().Lock()
 		if err == nil && c.GroupID == 0 {
 			if c.Disable&1 == 0 {
 				isdisable = 0
@@ -132,7 +142,7 @@ func (m *Control[CTX]) IsEnabledIn(gid int64) bool {
 		}
 		m.Cache[0] = isdisable
 		ok = true
-		m.Manager.Unlock()
+		m.Manager.RW().Unlock()
 		log.Debugf("[control] cache plugin %s of all : %v", m.Service, isdisable)
 	}
 
@@ -140,15 +150,15 @@ func (m *Control[CTX]) IsEnabledIn(gid int64) bool {
 		return isdisable == 0
 	}
 
-	m.Manager.RLock()
+	m.Manager.RW().RLock()
 	isdisable, ok = m.Cache[gid]
-	m.Manager.RUnlock()
+	m.Manager.RW().RUnlock()
 	if !ok {
-		m.Manager.RLock()
-		err = m.Manager.D.Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(gid, 10))
-		m.Manager.RUnlock()
+		m.Manager.RW().RLock()
+		err = m.Manager.DB().Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(gid, 10))
+		m.Manager.RW().RUnlock()
 		if err == nil && gid == c.GroupID {
-			m.Manager.Lock()
+			m.Manager.RW().Lock()
 			if c.Disable&1 == 0 {
 				isdisable = 0
 			} else {
@@ -156,7 +166,7 @@ func (m *Control[CTX]) IsEnabledIn(gid int64) bool {
 			}
 			m.Cache[gid] = isdisable
 			ok = true
-			m.Manager.Unlock()
+			m.Manager.RW().Unlock()
 			log.Debugf("[control] cache plugin %s of grp %d : %v", m.Service, gid, isdisable)
 		}
 	}
@@ -165,14 +175,14 @@ func (m *Control[CTX]) IsEnabledIn(gid int64) bool {
 		return isdisable == 0
 	}
 
-	m.Manager.Lock()
+	m.Manager.RW().Lock()
 	if m.Options.DisableOnDefault {
 		isdisable = 1
 	} else {
 		isdisable = 0
 	}
 	m.Cache[gid] = isdisable
-	m.Manager.Unlock()
+	m.Manager.RW().Unlock()
 	log.Debugf("[control] cache plugin %s of grp %d (default) : %v", m.Service, gid, isdisable)
 
 	return isdisable == 0

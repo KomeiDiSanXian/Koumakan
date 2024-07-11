@@ -19,10 +19,10 @@ func (m *Control[CTX]) Ban(uid, gid int64) {
 	if gid != 0 { // 特定群
 		digest = md5.Sum(helper.StringToBytes(fmt.Sprintf("[%s]%d_%d", m.Service, uid, gid)))
 		id := binary.LittleEndian.Uint64(digest[:8])
-		m.Manager.Lock()
-		err = m.Manager.D.Insert(m.Service+"ban", &BanStatus{ID: int64(id), UserID: uid, GroupID: gid})
+		m.Manager.RW().Lock()
+		err = m.Manager.DB().Insert(m.Service+"ban", &BanStatus{ID: int64(id), UserID: uid, GroupID: gid})
 		banCache[id] = true
-		m.Manager.Unlock()
+		m.Manager.RW().Unlock()
 		if err == nil {
 			log.Debugf("[control] plugin %s is banned in grp %d for usr %d.", m.Service, gid, uid)
 			return
@@ -31,10 +31,10 @@ func (m *Control[CTX]) Ban(uid, gid int64) {
 	// 所有群
 	digest = md5.Sum(helper.StringToBytes(fmt.Sprintf("[%s]%d_all", m.Service, uid)))
 	id := binary.LittleEndian.Uint64(digest[:8])
-	m.Manager.Lock()
-	err = m.Manager.D.Insert(m.Service+"ban", &BanStatus{ID: int64(id), UserID: uid, GroupID: 0})
+	m.Manager.RW().Lock()
+	err = m.Manager.DB().Insert(m.Service+"ban", &BanStatus{ID: int64(id), UserID: uid, GroupID: 0})
 	banCache[id] = true
-	m.Manager.Unlock()
+	m.Manager.RW().Unlock()
 	if err == nil {
 		log.Debugf("[control] plugin %s is banned in all grp for usr %d.", m.Service, uid)
 	}
@@ -46,20 +46,20 @@ func (m *Control[CTX]) Permit(uid, gid int64) {
 	if gid != 0 { // 特定群
 		digest = md5.Sum(helper.StringToBytes(fmt.Sprintf("[%s]%d_%d", m.Service, uid, gid)))
 		id := binary.LittleEndian.Uint64(digest[:8])
-		m.Manager.Lock()
-		_ = m.Manager.D.Del(m.Service+"ban", "WHERE id = "+strconv.FormatInt(int64(id), 10))
+		m.Manager.RW().Lock()
+		_ = m.Manager.DB().Del(m.Service+"ban", "WHERE id = "+strconv.FormatInt(int64(id), 10))
 		banCache[id] = false
-		m.Manager.Unlock()
+		m.Manager.RW().Unlock()
 		log.Debugf("[control] plugin %s is permitted in grp %d for usr %d.", m.Service, gid, uid)
 		return
 	}
 	// 所有群
 	digest = md5.Sum(helper.StringToBytes(fmt.Sprintf("[%s]%d_all", m.Service, uid)))
 	id := binary.LittleEndian.Uint64(digest[:8])
-	m.Manager.Lock()
-	_ = m.Manager.D.Del(m.Service+"ban", "WHERE id = "+strconv.FormatInt(int64(id), 10))
+	m.Manager.RW().Lock()
+	_ = m.Manager.DB().Del(m.Service+"ban", "WHERE id = "+strconv.FormatInt(int64(id), 10))
 	banCache[id] = false
-	m.Manager.Unlock()
+	m.Manager.RW().Unlock()
 	log.Debugf("[control] plugin %s is permitted in all grp for usr %d.", m.Service, uid)
 }
 
@@ -71,42 +71,42 @@ func (m *Control[CTX]) IsBannedIn(uid, gid int64) bool {
 	if gid != 0 {
 		digest = md5.Sum(helper.StringToBytes(fmt.Sprintf("[%s]%d_%d", m.Service, uid, gid)))
 		id := binary.LittleEndian.Uint64(digest[:8])
-		m.Manager.RLock()
+		m.Manager.RW().RLock()
 		if yes, ok := banCache[id]; ok {
-			m.Manager.RUnlock()
+			m.Manager.RW().RUnlock()
 			return yes
 		}
-		err = m.Manager.D.Find(m.Service+"ban", &b, "WHERE id = "+strconv.FormatInt(int64(id), 10))
-		m.Manager.RUnlock()
+		err = m.Manager.DB().Find(m.Service+"ban", &b, "WHERE id = "+strconv.FormatInt(int64(id), 10))
+		m.Manager.RW().RUnlock()
 		if err == nil && gid == b.GroupID && uid == b.UserID {
 			log.Debugf("[control] plugin %s is banned in grp %d for usr %d.", m.Service, b.GroupID, b.UserID)
-			m.Manager.Lock()
+			m.Manager.RW().Lock()
 			banCache[id] = true
-			m.Manager.Unlock()
+			m.Manager.RW().Unlock()
 			return true
 		}
-		m.Manager.Lock()
+		m.Manager.RW().Lock()
 		banCache[id] = false
-		m.Manager.Unlock()
+		m.Manager.RW().Unlock()
 	}
 	digest = md5.Sum(helper.StringToBytes(fmt.Sprintf("[%s]%d_all", m.Service, uid)))
 	id := binary.LittleEndian.Uint64(digest[:8])
-	m.Manager.RLock()
+	m.Manager.RW().RLock()
 	if yes, ok := banCache[id]; ok {
-		m.Manager.RUnlock()
+		m.Manager.RW().RUnlock()
 		return yes
 	}
-	err = m.Manager.D.Find(m.Service+"ban", &b, "WHERE id = "+strconv.FormatInt(int64(id), 10))
-	m.Manager.RUnlock()
+	err = m.Manager.DB().Find(m.Service+"ban", &b, "WHERE id = "+strconv.FormatInt(int64(id), 10))
+	m.Manager.RW().RUnlock()
 	if err == nil && b.GroupID == 0 && uid == b.UserID {
 		log.Debugf("[control] plugin %s is banned in all grp for usr %d.", m.Service, b.UserID)
-		m.Manager.Lock()
+		m.Manager.RW().Lock()
 		banCache[id] = true
-		m.Manager.Unlock()
+		m.Manager.RW().Unlock()
 		return true
 	}
-	m.Manager.Lock()
+	m.Manager.RW().Lock()
 	banCache[id] = false
-	m.Manager.Unlock()
+	m.Manager.RW().Unlock()
 	return false
 }

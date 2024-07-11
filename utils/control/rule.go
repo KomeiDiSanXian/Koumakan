@@ -45,7 +45,7 @@ func newctrl(service string, o *Options[*zero.Ctx]) zero.Rule {
 }
 
 // Lookup 查找服务
-func Lookup(service string) (*Control[*zero.Ctx], bool) {
+func Lookup(service string) (IControl[*zero.Ctx], bool) {
 	_, ok := briefmap[service]
 	if ok {
 		return managers.Lookup(briefmap[service])
@@ -165,15 +165,15 @@ func init() {
 		}
 		if strings.Contains(model.Command, "启用") || strings.Contains(model.Command, "enable") {
 			service.Enable(grp)
-			if service.Options.OnEnable != nil {
-				service.Options.OnEnable(ctx)
+			if service.GetOptions().OnEnable != nil {
+				service.GetOptions().OnEnable(ctx)
 			} else {
 				ctx.SendChain(message.Text("已启用服务: " + model.Args))
 			}
 		} else {
 			service.Disable(grp)
-			if service.Options.OnDisable != nil {
-				service.Options.OnDisable(ctx)
+			if service.GetOptions().OnDisable != nil {
+				service.GetOptions().OnDisable(ctx)
 			} else {
 				ctx.SendChain(message.Text("已禁用服务: " + model.Args))
 			}
@@ -189,8 +189,8 @@ func init() {
 		}
 		condition := strings.Contains(ctx.Event.RawMessage, "启用") || strings.Contains(ctx.Event.RawMessage, "enable")
 		if condition {
-			managers.ForEach(func(key string, manager *Control[*zero.Ctx]) bool {
-				if manager.Options.DisableOnDefault == condition {
+			managers.ForEach(func(key string, manager IControl[*zero.Ctx]) bool {
+				if manager.GetOptions().DisableOnDefault == condition {
 					return true
 				}
 				manager.Enable(grp)
@@ -198,7 +198,7 @@ func init() {
 			})
 			ctx.SendChain(message.Text("此处启用所有插件成功"))
 		} else {
-			managers.ForEach(func(key string, manager *Control[*zero.Ctx]) bool {
+			managers.ForEach(func(key string, manager IControl[*zero.Ctx]) bool {
 				manager.Disable(grp)
 				return true
 			})
@@ -427,7 +427,7 @@ func init() {
 				ctx.SendChain(message.Text("没有找到指定服务!"))
 				return
 			}
-			if service.Options.Help == "" {
+			if service.GetOptions().Help == "" {
 				ctx.SendChain(message.Text("该服务无帮助!"))
 				return
 			}
@@ -443,8 +443,8 @@ func init() {
 				return
 			}
 			imgs, err := (&rendercard.Title{
-				LeftTitle:     service.Service,
-				LeftSubtitle:  service.Options.Brief,
+				LeftTitle:     service.GetServiceName(),
+				LeftSubtitle:  service.GetOptions().Brief,
 				RightTitle:    "FloatTech",
 				RightSubtitle: "RemiliaBot",
 				ImagePath:     kanbanpath + "kanban.png",

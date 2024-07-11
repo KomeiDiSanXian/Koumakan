@@ -77,11 +77,11 @@ func init() {
 
 func drawservicesof(gid int64) (imgs []image.Image, err error) {
 	pluginlist := make([]plugininfo, len(priomap))
-	ForEachByPrio(func(i int, manager *Control[*zero.Ctx]) bool {
+	ForEachByPrio(func(i int, manager IControl[*zero.Ctx]) bool {
 		pluginlist[i] = plugininfo{
-			name:   manager.Service,
-			brief:  manager.Options.Brief,
-			banner: manager.Options.Banner,
+			name:   manager.GetServiceName(),
+			brief:  manager.GetOptions().Brief,
+			banner: manager.GetOptions().Banner,
 			status: manager.IsEnabledIn(gid),
 		}
 		return true

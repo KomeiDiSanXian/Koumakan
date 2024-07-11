@@ -12,9 +12,24 @@ import (
 
 // Manager 管理
 type Manager[CTX any] struct {
-	sync.RWMutex
-	M map[string]*Control[CTX]
-	D sql.Sqlite
+	rw *sync.RWMutex
+	m  map[string]IControl[CTX]
+	d  *sql.Sqlite
+}
+
+// RW 返回读写锁
+func (m *Manager[CTX]) RW() *sync.RWMutex {
+	return m.rw
+}
+
+// ControlMap 返回控制器映射
+func (m *Manager[CTX]) ControlMap() map[string]IControl[CTX] {
+	return m.m
+}
+
+// DB 返回数据库
+func (m *Manager[CTX]) DB() *sql.Sqlite {
+	return m.d
 }
 
 // NewManager 打开管理数据库
@@ -38,10 +53,10 @@ func NewManager[CTX any](dbpath string) (m Manager[CTX]) {
 		}
 	}
 	m = Manager[CTX]{
-		M: map[string]*Control[CTX]{},
-		D: sql.Sqlite{DBPath: dbpath},
+		m: map[string]IControl[CTX]{},
+		d: &sql.Sqlite{DBPath: dbpath},
 	}
-	err := m.D.Open(time.Hour)
+	err := m.d.Open(time.Hour)
 	if err != nil {
 		panic(err)
 	}
@@ -58,18 +73,18 @@ func NewManager[CTX any](dbpath string) (m Manager[CTX]) {
 
 // Lookup returns a Manager by the service name, if
 // not exist, it will return nil.
-func (manager *Manager[CTX]) Lookup(service string) (*Control[CTX], bool) {
-	manager.RLock()
-	m, ok := manager.M[service]
-	manager.RUnlock()
+func (manager *Manager[CTX]) Lookup(service string) (IControl[CTX], bool) {
+	manager.rw.RLock()
+	m, ok := manager.m[service]
+	manager.rw.RUnlock()
 	return m, ok
 }
 
 // ForEach iterates through managers.
-func (manager *Manager[CTX]) ForEach(iterator func(key string, manager *Control[CTX]) bool) {
-	manager.RLock()
-	m := cpmp(manager.M)
-	manager.RUnlock()
+func (manager *Manager[CTX]) ForEach(iterator func(key string, manager IControl[CTX]) bool) {
+	manager.rw.RLock()
+	m := cpmp(manager.m)
+	manager.rw.RUnlock()
 	for k, v := range m {
 		if !iterator(k, v) {
 			return
@@ -77,8 +92,8 @@ func (manager *Manager[CTX]) ForEach(iterator func(key string, manager *Control[
 	}
 }
 
-func cpmp[CTX any](m map[string]*Control[CTX]) map[string]*Control[CTX] {
-	ret := make(map[string]*Control[CTX], len(m))
+func cpmp[CTX any](m map[string]IControl[CTX]) map[string]IControl[CTX] {
+	ret := make(map[string]IControl[CTX], len(m))
 	for k, v := range m {
 		ret[k] = v
 	}

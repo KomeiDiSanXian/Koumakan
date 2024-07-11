@@ -21,9 +21,9 @@ var (
 func (m *Control[CTX]) GetData(gid int64) int64 {
 	var c GroupConfig
 	var err error
-	m.Manager.RLock()
-	err = m.Manager.D.Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(gid, 10))
-	m.Manager.RUnlock()
+	m.Manager.RW().RLock()
+	err = m.Manager.DB().Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(gid, 10))
+	m.Manager.RW().RUnlock()
 	if err == nil && gid == c.GroupID {
 		log.Debugf("[control] plugin %s of grp %d : 0x%x", m.Service, c.GroupID, c.Disable>>1)
 		return (c.Disable >> 1) & 0x3fffffff_ffffffff
@@ -34,9 +34,9 @@ func (m *Control[CTX]) GetData(gid int64) int64 {
 // SetData 为某个群设置中间 62 位配置数据 (除高低位)
 func (m *Control[CTX]) SetData(groupID int64, data int64) error {
 	var c GroupConfig
-	m.Manager.RLock()
-	err := m.Manager.D.Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(groupID, 10))
-	m.Manager.RUnlock()
+	m.Manager.RW().RLock()
+	err := m.Manager.DB().Find(m.Service, &c, "WHERE gid="+strconv.FormatInt(groupID, 10))
+	m.Manager.RW().RUnlock()
 	if err != nil {
 		c.GroupID = groupID
 		if m.Options.DisableOnDefault {
@@ -48,9 +48,9 @@ func (m *Control[CTX]) SetData(groupID int64, data int64) error {
 	x |= uint64(data) << 2
 	c.Disable = int64(bits.RotateLeft64(x, -1))
 	log.Debugf("[control] set plugin %s of grp %d : 0x%x", m.Service, c.GroupID, data)
-	m.Manager.Lock()
-	err = m.Manager.D.Insert(m.Service, &c)
-	m.Manager.Unlock()
+	m.Manager.RW().Lock()
+	err = m.Manager.DB().Insert(m.Service, &c)
+	m.Manager.RW().Unlock()
 	if err != nil {
 		log.Errorf("[control] %v", err)
 	}
@@ -70,9 +70,9 @@ func (manager *Manager[CTX]) getExtra(gid int64, obj any) error {
 	if !manager.CanResponse(gid) {
 		return errors.New("there is no extra data for a silent group")
 	}
-	manager.RLock()
+	manager.RW().RLock()
 	ext, ok := respCache[gid]
-	manager.RUnlock()
+	manager.RW().RUnlock()
 	if ok {
 		if ext == "-" {
 			return ErrEmptyExtra
@@ -80,18 +80,18 @@ func (manager *Manager[CTX]) getExtra(gid int64, obj any) error {
 		return json.Unmarshal(helper.StringToBytes(ext), obj)
 	}
 	var rsp ResponseGroup
-	manager.RLock()
-	err := manager.D.Find("__resp", &rsp, "where gid = "+strconv.FormatInt(gid, 10))
-	manager.RUnlock()
+	manager.RW().RLock()
+	err := manager.DB().Find("__resp", &rsp, "where gid = "+strconv.FormatInt(gid, 10))
+	manager.RW().RUnlock()
 	if err != nil || rsp.Extra == "-" {
-		manager.Lock()
+		manager.RW().Lock()
 		respCache[gid] = "-"
-		manager.Unlock()
+		manager.RW().Unlock()
 		return ErrEmptyExtra
 	}
-	manager.Lock()
+	manager.RW().Lock()
 	respCache[gid] = rsp.Extra
-	manager.Unlock()
+	manager.RW().Unlock()
 	return json.Unmarshal(helper.StringToBytes(rsp.Extra), obj)
 }
 
@@ -113,8 +113,8 @@ func (manager *Manager[CTX]) setExtra(gid int64, obj any) error {
 	if err != nil {
 		return err
 	}
-	manager.Lock()
-	defer manager.Unlock()
+	manager.RW().Lock()
+	defer manager.RW().Unlock()
 	respCache[gid] = helper.BytesToString(data)
-	return manager.D.Insert("__resp", &ResponseGroup{GroupID: gid, Extra: helper.BytesToString(data)})
+	return manager.DB().Insert("__resp", &ResponseGroup{GroupID: gid, Extra: helper.BytesToString(data)})
 }

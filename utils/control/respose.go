@@ -7,7 +7,7 @@ import (
 
 // InitResponse ...
 func (manager *Manager[CTX]) initResponse() error {
-	return manager.D.Create("__resp", &ResponseGroup{})
+	return manager.d.Create("__resp", &ResponseGroup{})
 }
 
 var respCache = make(map[int64]string)
@@ -17,10 +17,10 @@ func (manager *Manager[CTX]) Response(gid int64) error {
 	if manager.CanResponse(gid) {
 		return errors.New("group " + strconv.FormatInt(gid, 10) + " already in response")
 	}
-	manager.Lock()
+	manager.rw.Lock()
 	respCache[gid] = ""
-	err := manager.D.Insert("__resp", &ResponseGroup{GroupID: gid})
-	manager.Unlock()
+	err := manager.d.Insert("__resp", &ResponseGroup{GroupID: gid})
+	manager.rw.Unlock()
 	return err
 }
 
@@ -29,48 +29,48 @@ func (manager *Manager[CTX]) Silence(gid int64) error {
 	if !manager.CanResponse(gid) {
 		return errors.New("group " + strconv.FormatInt(gid, 10) + " already in silence")
 	}
-	manager.Lock()
+	manager.rw.Lock()
 	respCache[gid] = "-"
-	err := manager.D.Del("__resp", "where gid = "+strconv.FormatInt(gid, 10))
-	manager.Unlock()
+	err := manager.d.Del("__resp", "where gid = "+strconv.FormatInt(gid, 10))
+	manager.rw.Unlock()
 	return err
 }
 
 // CanResponse ...
 func (manager *Manager[CTX]) CanResponse(gid int64) bool {
-	manager.RLock()
+	manager.rw.RLock()
 	ext, ok := respCache[0] // all status
-	manager.RUnlock()
+	manager.rw.RUnlock()
 	if ok && ext != "-" {
 		return true
 	}
-	manager.RLock()
+	manager.rw.RLock()
 	ext, ok = respCache[gid]
-	manager.RUnlock()
+	manager.rw.RUnlock()
 	if ok {
 		return ext != "-"
 	}
-	manager.RLock()
+	manager.rw.RLock()
 	var rsp ResponseGroup
-	err := manager.D.Find("__resp", &rsp, "where gid = 0") // all status
-	manager.RUnlock()
+	err := manager.d.Find("__resp", &rsp, "where gid = 0") // all status
+	manager.rw.RUnlock()
 	if err == nil && rsp.Extra != "-" {
-		manager.Lock()
+		manager.rw.Lock()
 		respCache[0] = rsp.Extra
-		manager.Unlock()
+		manager.rw.Unlock()
 		return true
 	}
-	manager.RLock()
-	err = manager.D.Find("__resp", &rsp, "where gid = "+strconv.FormatInt(gid, 10))
-	manager.RUnlock()
+	manager.rw.RLock()
+	err = manager.d.Find("__resp", &rsp, "where gid = "+strconv.FormatInt(gid, 10))
+	manager.rw.RUnlock()
 	if err != nil {
-		manager.Lock()
+		manager.rw.Lock()
 		respCache[gid] = "-"
-		manager.Unlock()
+		manager.rw.Unlock()
 		return false
 	}
-	manager.Lock()
+	manager.rw.Lock()
 	respCache[gid] = rsp.Extra
-	manager.Unlock()
+	manager.rw.Unlock()
 	return rsp.Extra != "-"
 }
