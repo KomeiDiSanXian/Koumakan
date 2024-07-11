@@ -77,7 +77,7 @@ func init() {
 
 func drawservicesof(gid int64) (imgs []image.Image, err error) {
 	pluginlist := make([]plugininfo, len(priomap))
-	ForEachByPrio(func(i int, manager IControl[*zero.Ctx]) bool {
+	ForEachByPrio(func(i int, manager IControl[zero.Context]) bool {
 		pluginlist[i] = plugininfo{
 			name:   manager.GetServiceName(),
 			brief:  manager.GetOptions().Brief,

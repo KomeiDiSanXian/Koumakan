@@ -101,20 +101,20 @@ func ParseShell(s string) []string {
 func ShellRule(cmd string, model interface{}) Rule {
 	cmdRule := CommandRule(cmd)
 	t := reflect.TypeOf(model)
-	return func(ctx *Ctx) bool {
+	return func(ctx Context) bool {
 		if !cmdRule(ctx) {
 			return false
 		}
 		// bind flag to struct
-		args := ParseShell(ctx.State["args"].(string))
+		args := ParseShell(ctx.GetState()["args"].(string))
 		val := reflect.New(t)
 		fs := registerFlag(t, val)
 		err := fs.Parse(args)
 		if err != nil {
 			return false
 		}
-		ctx.State["args"] = fs.Args()
-		ctx.State["flag"] = val.Interface()
+		ctx.GetState()["args"] = fs.Args()
+		ctx.GetState()["flag"] = val.Interface()
 		return true
 	}
 }

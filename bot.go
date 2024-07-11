@@ -218,7 +218,7 @@ func processEventAsync(response []byte, caller APICaller, maxwait time.Duration)
 	}
 	matcherLock.Lock()
 	if hasMatcherListChanged {
-		matcherListForRanging = make([]*Matcher, len(matcherList))
+		matcherListForRanging = make([]IMatcher, len(matcherList))
 		copy(matcherListForRanging, matcherList)
 		hasMatcherListChanged = false
 	}
@@ -255,30 +255,30 @@ func gohandler(ctx *Ctx, handler Handler) <-chan struct{} {
 	return ch
 }
 
-func processMatchers(ctx *Ctx, matchers []*Matcher, t *time.Timer) {
+func processMatchers(ctx *Ctx, matchers []IMatcher, t *time.Timer) {
 	for _, matcher := range matchers {
-		if !matcher.Type(ctx) { // 不匹配直接跳过
+		if !matcher.GetType()(ctx) { // 不匹配直接跳过
 			continue
 		}
 		for k := range ctx.State { // Clear State
 			delete(ctx.State, k)
 		}
 		// copy matcher
-		m := matcher.copy()
+		m := matcher.(*Matcher).copy() // todo: fix possible panic
 		ctx.ma = m
 
 		// pre handler
-		if eng := m.Engine; eng != nil {
+		if eng := m.GetEngine(); eng != nil {
 			if processEnginePreHandler(ctx, eng, t) { // true 退出循环
 				return
 			}
 		}
 		// rules
-		if processRules(ctx, m.Rules, t) {
+		if processRules(ctx, m.GetRules(), t) {
 			return
 		}
 		// mid handler
-		if eng := m.Engine; eng != nil {
+		if eng := m.GetEngine(); eng != nil {
 			if processEngineMidHandler(ctx, eng, t) { // true 退出循环
 				return
 			}
@@ -287,16 +287,16 @@ func processMatchers(ctx *Ctx, matchers []*Matcher, t *time.Timer) {
 		if processMatcherHandler(ctx, t) { // true 退出循环
 			return
 		}
-		if m.Temp { // 临时 Matcher 删除
+		if m.GetTemp() { // 临时 Matcher 删除
 			m.Delete()
 		}
 		// post handler
-		if eng := m.Engine; eng != nil {
+		if eng := m.GetEngine(); eng != nil {
 			if processEnginePostHandler(ctx, eng, t) { // true 退出循环
 				return
 			}
 		}
-		if m.Block { // 阻断后续
+		if m.GetBlock() { // 阻断后续
 			return
 		}
 	}
@@ -308,10 +308,10 @@ func processRule(ctx *Ctx, rule Rule, t *time.Timer, logStr string) bool {
 		select {
 		case ok := <-c:
 			if !ok {
-				return ctx.ma.Break
+				return ctx.ma.GetBreak()
 			}
 		case <-t.C:
-			if ctx.ma.NoTimeout {
+			if ctx.ma.GetNoTimeout() {
 				t.Reset(BotConfig.MaxProcessTime)
 				continue
 			}
@@ -329,7 +329,7 @@ func processHandler(ctx *Ctx, handler Handler, t *time.Timer, logStr string) boo
 		select {
 		case <-c:
 		case <-t.C:
-			if ctx.ma.NoTimeout {
+			if ctx.ma.GetNoTimeout() {
 				t.Reset(BotConfig.MaxProcessTime)
 				continue
 			}
@@ -341,8 +341,8 @@ func processHandler(ctx *Ctx, handler Handler, t *time.Timer, logStr string) boo
 	return false
 }
 
-func processEnginePreHandler(ctx *Ctx, engine *Engine, t *time.Timer) bool { // 返回是否退出上层循环
-	for _, handler := range engine.preHandler {
+func processEnginePreHandler(ctx *Ctx, engine IEngine, t *time.Timer) bool { // 返回是否退出上层循环
+	for _, handler := range engine.getPreHandler() {
 		if processRule(ctx, handler, t, "preHandler") {
 			return true
 		}
@@ -359,8 +359,8 @@ func processRules(ctx *Ctx, rules []Rule, t *time.Timer) bool {
 	return false
 }
 
-func processEngineMidHandler(ctx *Ctx, engine *Engine, t *time.Timer) bool {
-	for _, handler := range engine.midHandler {
+func processEngineMidHandler(ctx *Ctx, engine IEngine, t *time.Timer) bool {
+	for _, handler := range engine.getMidHandler() {
 		if processRule(ctx, handler, t, "midHandler") {
 			return true
 		}
@@ -369,7 +369,7 @@ func processEngineMidHandler(ctx *Ctx, engine *Engine, t *time.Timer) bool {
 }
 
 func processMatcherHandler(ctx *Ctx, t *time.Timer) bool {
-	if h := ctx.ma.Handler; h != nil {
+	if h := ctx.ma.GetHandler(); h != nil {
 		if processHandler(ctx, h, t, "handler") {
 			return true
 		}
@@ -377,8 +377,8 @@ func processMatcherHandler(ctx *Ctx, t *time.Timer) bool {
 	return false
 }
 
-func processEnginePostHandler(ctx *Ctx, engine *Engine, t *time.Timer) bool {
-	for _, handler := range engine.postHandler {
+func processEnginePostHandler(ctx *Ctx, engine IEngine, t *time.Timer) bool {
+	for _, handler := range engine.getPostHandler() {
 		if processHandler(ctx, handler, t, "postHandler") {
 			return true
 		}
@@ -387,7 +387,7 @@ func processEnginePostHandler(ctx *Ctx, engine *Engine, t *time.Timer) bool {
 }
 
 // match 匹配规则，处理事件
-func match(ctx *Ctx, matchers []*Matcher, maxwait time.Duration) {
+func match(ctx *Ctx, matchers []IMatcher, maxwait time.Duration) {
 	if BotConfig.MarkMessage && ctx.Event.MessageID != nil {
 		ctx.MarkThisMessageAsRead()
 	}

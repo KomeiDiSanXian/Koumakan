@@ -25,7 +25,7 @@ func LoadCustomPriority(m map[string]uint64) {
 }
 
 // AutoRegister 根据包名自动注册插件
-func AutoRegister(o *Options[*zero.Ctx]) IControlEngine {
+func AutoRegister(o *Options[zero.Context]) IControlEngine {
 	pc, _, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("unable to get caller")
@@ -45,7 +45,7 @@ func AutoRegister(o *Options[*zero.Ctx]) IControlEngine {
 }
 
 // Register 注册插件控制器
-func Register(service string, o *Options[*zero.Ctx]) IControlEngine {
+func Register(service string, o *Options[zero.Context]) IControlEngine {
 	if custpriomap != nil {
 		logrus.Debugln("[control]插件", service, "已设置自定义优先级", prio)
 		engine := newengine(service, int(custpriomap[service]), o)

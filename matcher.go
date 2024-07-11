@@ -3,13 +3,15 @@ package zero
 import (
 	"sort"
 	"sync"
+
+	"github.com/wdvxdr1123/ZeroBot/extension/rate"
 )
 
 type (
 	// Rule filter the event
-	Rule func(ctx *Ctx) bool
+	Rule func(ctx Context) bool
 	// Handler 事件处理函数
-	Handler func(ctx *Ctx)
+	Handler func(ctx Context)
 )
 
 // Matcher 是 ZeroBot 匹配和处理事件的最小单元
@@ -33,16 +35,16 @@ type Matcher struct {
 	// Handler 处理事件的函数
 	Handler Handler
 	// Engine 注册 Matcher 的 Engine，Engine可为一系列 Matcher 添加通用 Rule 和 其他钩子
-	Engine *Engine
+	Engine IEngine
 }
 
 var (
 	// 所有主匹配器列表
-	matcherList = make([]*Matcher, 0)
+	matcherList = make([]IMatcher, 0)
 	// Matcher 修改读写锁
 	matcherLock = sync.RWMutex{}
 	// 用于迭代的所有主匹配器列表
-	matcherListForRanging []*Matcher
+	matcherListForRanging []IMatcher
 	// 是否 matcherList 已经改变
 	// 如果改变，下次迭代需要更新
 	// matcherListForRanging
@@ -54,19 +56,82 @@ type State map[string]interface{}
 
 func sortMatcher() {
 	sort.Slice(matcherList, func(i, j int) bool { // 按优先级排序
-		return matcherList[i].Priority < matcherList[j].Priority
+		return matcherList[i].GetPriority() < matcherList[j].GetPriority()
 	})
 	hasMatcherListChanged = true
 }
 
+// GetPriority 获取当前 Matcher 优先级
+func (m *Matcher) GetPriority() int {
+	return m.Priority
+}
+
+// GetBlock 获取当前 Matcher 是否阻断后续 Matcher
+func (m *Matcher) GetBlock() bool {
+	return m.Block
+}
+
+// GetTemp 获取当前 Matcher 是否为临时 Matcher
+func (m *Matcher) GetTemp() bool {
+	return m.Temp
+}
+
+// GetNoTimeout 获取当前 Matcher 是否不设超时
+func (m *Matcher) GetNoTimeout() bool {
+	return m.NoTimeout
+}
+
+// GetType 获取当前 Matcher 匹配的事件类型
+func (m *Matcher) GetType() Rule {
+	return m.Type
+}
+
+// GetRules 获取当前 Matcher 的匹配规则
+func (m *Matcher) GetRules() []Rule {
+	return m.Rules
+}
+
+// GetBreak 获取当前 Matcher 是否退出后续匹配流程
+func (m *Matcher) GetBreak() bool {
+	return m.Break
+}
+
+// GetHandler 获取当前 Matcher 的处理函数
+func (m *Matcher) GetHandler() Handler {
+	return m.Handler
+}
+
+// GetEngine 获取当前 Matcher 的 Engine
+func (m *Matcher) GetEngine() IEngine {
+	return m.Engine
+}
+
+// SetBreak 设置是否退出后续匹配流程
+func (m *Matcher) SetBreak(b bool) IMatcher {
+	m.Break = b
+	return m
+}
+
+// SetNoTimeout 设置是否不设超时
+func (m *Matcher) SetNoTimeout(b bool) IMatcher {
+	m.NoTimeout = b
+	return m
+}
+
+// SetRules 设置当前 Matcher 的匹配规则
+func (m *Matcher) SetRules(rules ...Rule) IMatcher {
+	m.Rules = rules
+	return m
+}
+
 // SetBlock 设置是否阻断后面的 Matcher 触发
-func (m *Matcher) SetBlock(block bool) *Matcher {
+func (m *Matcher) SetBlock(block bool) IMatcher {
 	m.Block = block
 	return m
 }
 
 // SetPriority 设置当前 Matcher 优先级
-func (m *Matcher) SetPriority(priority int) *Matcher {
+func (m *Matcher) SetPriority(priority int) IMatcher {
 	matcherLock.Lock()
 	defer matcherLock.Unlock()
 	m.Priority = priority
@@ -75,33 +140,33 @@ func (m *Matcher) SetPriority(priority int) *Matcher {
 }
 
 // FirstPriority 设置当前 Matcher 优先级 - 0
-func (m *Matcher) FirstPriority() *Matcher {
+func (m *Matcher) FirstPriority() IMatcher {
 	return m.SetPriority(0)
 }
 
 // SecondPriority 设置当前 Matcher 优先级 - 1
-func (m *Matcher) SecondPriority() *Matcher {
+func (m *Matcher) SecondPriority() IMatcher {
 	return m.SetPriority(1)
 }
 
 // ThirdPriority 设置当前 Matcher 优先级 - 2
-func (m *Matcher) ThirdPriority() *Matcher {
+func (m *Matcher) ThirdPriority() IMatcher {
 	return m.SetPriority(2)
 }
 
 // BindEngine bind the matcher to a engine
-func (m *Matcher) BindEngine(e *Engine) *Matcher {
+func (m *Matcher) BindEngine(e IEngine) IMatcher {
 	m.Engine = e
 	return m
 }
 
 // StoreMatcher store a matcher to matcher list.
-func StoreMatcher(m *Matcher) *Matcher {
+func StoreMatcher(m *Matcher) IMatcher {
 	matcherLock.Lock()
 	defer matcherLock.Unlock()
 	// todo(wdvxdr): move to engine.
 	if m.Engine != nil {
-		m.Block = m.Block || m.Engine.block
+		m.Block = m.Block || m.Engine.getBlock()
 	}
 	matcherList = append(matcherList, m)
 	sortMatcher()
@@ -109,7 +174,7 @@ func StoreMatcher(m *Matcher) *Matcher {
 }
 
 // StoreTempMatcher store a matcher only triggered once.
-func StoreTempMatcher(m *Matcher) *Matcher {
+func StoreTempMatcher(m *Matcher) IMatcher {
 	m.Temp = true
 	StoreMatcher(m)
 	return m
@@ -140,7 +205,23 @@ func (m *Matcher) copy() *Matcher {
 }
 
 // Handle 直接处理事件
-func (m *Matcher) Handle(handler Handler) *Matcher {
+func (m *Matcher) Handle(handler Handler) IMatcher {
 	m.Handler = handler
 	return m
+}
+
+// Limit 限速器
+func (m *Matcher) Limit(limiterfn func(Context) *rate.Limiter, postfn ...func(Context)) IMatcher {
+	newRule := append(m.GetRules(), func(ctx Context) bool {
+		if limiterfn(ctx).Acquire() {
+			return true
+		}
+		if len(postfn) > 0 {
+			for _, fn := range postfn {
+				fn(ctx)
+			}
+		}
+		return false
+	})
+	return m.SetRules(newRule...)
 }

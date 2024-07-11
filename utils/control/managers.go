@@ -7,7 +7,7 @@ import (
 )
 
 // ForEachByPrio iterates through managers by their priority.
-func ForEachByPrio(iterator func(i int, manager IControl[*zero.Ctx]) bool) {
+func ForEachByPrio(iterator func(i int, manager IControl[zero.Context]) bool) {
 	for i, v := range cpmp2lstbyprio() {
 		if !iterator(i, v) {
 			return
@@ -15,10 +15,10 @@ func ForEachByPrio(iterator func(i int, manager IControl[*zero.Ctx]) bool) {
 	}
 }
 
-func cpmp2lstbyprio() []IControl[*zero.Ctx] {
+func cpmp2lstbyprio() []IControl[zero.Context] {
 	managers.rw.RLock()
 	defer managers.rw.RUnlock()
-	ret := make([]IControl[*zero.Ctx], 0, len(managers.m))
+	ret := make([]IControl[zero.Context], 0, len(managers.m))
 	for _, v := range managers.m {
 		ret = append(ret, v)
 	}

@@ -1,7 +1,7 @@
 package zero
 
 // New 生成空引擎
-func New() *Engine {
+func New() IEngine {
 	return &Engine{
 		preHandler:  []Rule{},
 		midHandler:  []Rule{},
@@ -17,13 +17,29 @@ type Engine struct {
 	midHandler  []Rule
 	postHandler []Handler
 	block       bool
-	matchers    []*Matcher
+	matchers    []IMatcher
+}
+
+func (e *Engine) getPreHandler() []Rule {
+	return e.preHandler
+}
+
+func (e *Engine) getMidHandler() []Rule {
+	return e.midHandler
+}
+
+func (e *Engine) getPostHandler() []Handler {
+	return e.postHandler
+}
+
+func (e *Engine) getBlock() bool {
+	return e.block
 }
 
 func init() {
 	defaultEngine.UsePreHandler(
-		func(ctx *Ctx) bool {
-			return ctx.Event.UserID != ctx.Event.SelfID || ctx.Event.PostType != "message"
+		func(ctx Context) bool {
+			return ctx.GetEvent().UserID != ctx.GetEvent().SelfID || ctx.GetEvent().PostType != "message"
 		},
 	)
 }
@@ -35,7 +51,7 @@ func (e *Engine) Delete() {
 	}
 }
 
-func (e *Engine) SetBlock(block bool) *Engine {
+func (e *Engine) SetBlock(block bool) IEngine {
 	e.block = block
 	return e
 }
@@ -68,10 +84,10 @@ func (e *Engine) UsePostHandler(handler ...Handler) {
 }
 
 // On 添加新的指定消息类型的匹配器(默认Engine)
-func On(typ string, rules ...Rule) *Matcher { return defaultEngine.On(typ, rules...) }
+func On(typ string, rules ...Rule) IMatcher { return defaultEngine.On(typ, rules...) }
 
 // On 添加新的指定消息类型的匹配器
-func (e *Engine) On(typ string, rules ...Rule) *Matcher {
+func (e *Engine) On(typ string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type(typ),
 		Rules:  rules,
@@ -82,34 +98,34 @@ func (e *Engine) On(typ string, rules ...Rule) *Matcher {
 }
 
 // OnMessage 消息触发器
-func OnMessage(rules ...Rule) *Matcher { return On("message", rules...) }
+func OnMessage(rules ...Rule) IMatcher { return On("message", rules...) }
 
 // OnMessage 消息触发器
-func (e *Engine) OnMessage(rules ...Rule) *Matcher { return e.On("message", rules...) }
+func (e *Engine) OnMessage(rules ...Rule) IMatcher { return e.On("message", rules...) }
 
 // OnNotice 系统提示触发器
-func OnNotice(rules ...Rule) *Matcher { return On("notice", rules...) }
+func OnNotice(rules ...Rule) IMatcher { return On("notice", rules...) }
 
 // OnNotice 系统提示触发器
-func (e *Engine) OnNotice(rules ...Rule) *Matcher { return e.On("notice", rules...) }
+func (e *Engine) OnNotice(rules ...Rule) IMatcher { return e.On("notice", rules...) }
 
 // OnRequest 请求消息触发器
-func OnRequest(rules ...Rule) *Matcher { return On("request", rules...) }
+func OnRequest(rules ...Rule) IMatcher { return On("request", rules...) }
 
 // OnRequest 请求消息触发器
-func (e *Engine) OnRequest(rules ...Rule) *Matcher { return On("request", rules...) }
+func (e *Engine) OnRequest(rules ...Rule) IMatcher { return On("request", rules...) }
 
 // OnMetaEvent 元事件触发器
-func OnMetaEvent(rules ...Rule) *Matcher { return On("meta_event", rules...) }
+func OnMetaEvent(rules ...Rule) IMatcher { return On("meta_event", rules...) }
 
 // OnMetaEvent 元事件触发器
-func (e *Engine) OnMetaEvent(rules ...Rule) *Matcher { return On("meta_event", rules...) }
+func (e *Engine) OnMetaEvent(rules ...Rule) IMatcher { return On("meta_event", rules...) }
 
 // OnPrefix 前缀触发器
-func OnPrefix(prefix string, rules ...Rule) *Matcher { return defaultEngine.OnPrefix(prefix, rules...) }
+func OnPrefix(prefix string, rules ...Rule) IMatcher { return defaultEngine.OnPrefix(prefix, rules...) }
 
 // OnPrefix 前缀触发器
-func (e *Engine) OnPrefix(prefix string, rules ...Rule) *Matcher {
+func (e *Engine) OnPrefix(prefix string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{PrefixRule(prefix)}, rules...),
@@ -120,10 +136,10 @@ func (e *Engine) OnPrefix(prefix string, rules ...Rule) *Matcher {
 }
 
 // OnSuffix 后缀触发器
-func OnSuffix(suffix string, rules ...Rule) *Matcher { return defaultEngine.OnSuffix(suffix, rules...) }
+func OnSuffix(suffix string, rules ...Rule) IMatcher { return defaultEngine.OnSuffix(suffix, rules...) }
 
 // OnSuffix 后缀触发器
-func (e *Engine) OnSuffix(suffix string, rules ...Rule) *Matcher {
+func (e *Engine) OnSuffix(suffix string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{SuffixRule(suffix)}, rules...),
@@ -134,12 +150,12 @@ func (e *Engine) OnSuffix(suffix string, rules ...Rule) *Matcher {
 }
 
 // OnCommand 命令触发器
-func OnCommand(commands string, rules ...Rule) *Matcher {
+func OnCommand(commands string, rules ...Rule) IMatcher {
 	return defaultEngine.OnCommand(commands, rules...)
 }
 
 // OnCommand 命令触发器
-func (e *Engine) OnCommand(commands string, rules ...Rule) *Matcher {
+func (e *Engine) OnCommand(commands string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{CommandRule(commands)}, rules...),
@@ -150,12 +166,12 @@ func (e *Engine) OnCommand(commands string, rules ...Rule) *Matcher {
 }
 
 // OnRegex 正则触发器
-func OnRegex(regexPattern string, rules ...Rule) *Matcher {
+func OnRegex(regexPattern string, rules ...Rule) IMatcher {
 	return OnMessage(append([]Rule{RegexRule(regexPattern)}, rules...)...)
 }
 
 // OnRegex 正则触发器
-func (e *Engine) OnRegex(regexPattern string, rules ...Rule) *Matcher {
+func (e *Engine) OnRegex(regexPattern string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{RegexRule(regexPattern)}, rules...),
@@ -166,12 +182,12 @@ func (e *Engine) OnRegex(regexPattern string, rules ...Rule) *Matcher {
 }
 
 // OnKeyword 关键词触发器
-func OnKeyword(keyword string, rules ...Rule) *Matcher {
+func OnKeyword(keyword string, rules ...Rule) IMatcher {
 	return defaultEngine.OnKeyword(keyword, rules...)
 }
 
 // OnKeyword 关键词触发器
-func (e *Engine) OnKeyword(keyword string, rules ...Rule) *Matcher {
+func (e *Engine) OnKeyword(keyword string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{KeywordRule(keyword)}, rules...),
@@ -182,12 +198,12 @@ func (e *Engine) OnKeyword(keyword string, rules ...Rule) *Matcher {
 }
 
 // OnFullMatch 完全匹配触发器
-func OnFullMatch(src string, rules ...Rule) *Matcher {
+func OnFullMatch(src string, rules ...Rule) IMatcher {
 	return defaultEngine.OnFullMatch(src, rules...)
 }
 
 // OnFullMatch 完全匹配触发器
-func (e *Engine) OnFullMatch(src string, rules ...Rule) *Matcher {
+func (e *Engine) OnFullMatch(src string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{FullMatchRule(src)}, rules...),
@@ -198,12 +214,12 @@ func (e *Engine) OnFullMatch(src string, rules ...Rule) *Matcher {
 }
 
 // OnFullMatchGroup 完全匹配触发器组
-func OnFullMatchGroup(src []string, rules ...Rule) *Matcher {
+func OnFullMatchGroup(src []string, rules ...Rule) IMatcher {
 	return defaultEngine.OnFullMatchGroup(src, rules...)
 }
 
 // OnFullMatchGroup 完全匹配触发器组
-func (e *Engine) OnFullMatchGroup(src []string, rules ...Rule) *Matcher {
+func (e *Engine) OnFullMatchGroup(src []string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{FullMatchRule(src...)}, rules...),
@@ -214,12 +230,12 @@ func (e *Engine) OnFullMatchGroup(src []string, rules ...Rule) *Matcher {
 }
 
 // OnKeywordGroup 关键词触发器组
-func OnKeywordGroup(keywords []string, rules ...Rule) *Matcher {
+func OnKeywordGroup(keywords []string, rules ...Rule) IMatcher {
 	return defaultEngine.OnKeywordGroup(keywords, rules...)
 }
 
 // OnKeywordGroup 关键词触发器组
-func (e *Engine) OnKeywordGroup(keywords []string, rules ...Rule) *Matcher {
+func (e *Engine) OnKeywordGroup(keywords []string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{KeywordRule(keywords...)}, rules...),
@@ -230,22 +246,22 @@ func (e *Engine) OnKeywordGroup(keywords []string, rules ...Rule) *Matcher {
 }
 
 // OnCommandGroup 命令触发器组
-func OnCommandGroup(commands []string, rules ...Rule) *Matcher {
+func OnCommandGroup(commands []string, rules ...Rule) IMatcher {
 	return defaultEngine.OnCommandGroup(commands, rules...)
 }
 
 // OnCommandGroup 命令触发器组
-func (e *Engine) OnCommandGroup(commands []string, rules ...Rule) *Matcher {
+func (e *Engine) OnCommandGroup(commands []string, rules ...Rule) IMatcher {
 	return e.On("message", append([]Rule{CommandRule(commands...)}, rules...)...)
 }
 
 // OnPrefixGroup 前缀触发器组
-func OnPrefixGroup(prefix []string, rules ...Rule) *Matcher {
+func OnPrefixGroup(prefix []string, rules ...Rule) IMatcher {
 	return defaultEngine.OnPrefixGroup(prefix, rules...)
 }
 
 // OnPrefixGroup 前缀触发器组
-func (e *Engine) OnPrefixGroup(prefix []string, rules ...Rule) *Matcher {
+func (e *Engine) OnPrefixGroup(prefix []string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{PrefixRule(prefix...)}, rules...),
@@ -256,12 +272,12 @@ func (e *Engine) OnPrefixGroup(prefix []string, rules ...Rule) *Matcher {
 }
 
 // OnSuffixGroup 后缀触发器组
-func OnSuffixGroup(suffix []string, rules ...Rule) *Matcher {
+func OnSuffixGroup(suffix []string, rules ...Rule) IMatcher {
 	return defaultEngine.OnSuffixGroup(suffix, rules...)
 }
 
 // OnSuffixGroup 后缀触发器组
-func (e *Engine) OnSuffixGroup(suffix []string, rules ...Rule) *Matcher {
+func (e *Engine) OnSuffixGroup(suffix []string, rules ...Rule) IMatcher {
 	matcher := &Matcher{
 		Type:   Type("message"),
 		Rules:  append([]Rule{SuffixRule(suffix...)}, rules...),
@@ -272,11 +288,11 @@ func (e *Engine) OnSuffixGroup(suffix []string, rules ...Rule) *Matcher {
 }
 
 // OnShell shell命令触发器
-func OnShell(command string, model interface{}, rules ...Rule) *Matcher {
+func OnShell(command string, model interface{}, rules ...Rule) IMatcher {
 	return defaultEngine.OnShell(command, model, rules...)
 }
 
 // OnShell shell命令触发器
-func (e *Engine) OnShell(command string, model interface{}, rules ...Rule) *Matcher {
+func (e *Engine) OnShell(command string, model interface{}, rules ...Rule) IMatcher {
 	return e.On("message", append([]Rule{ShellRule(command, model)}, rules...)...)
 }

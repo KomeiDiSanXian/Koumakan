@@ -12,7 +12,7 @@ import (
 // Ctx represents the Context which hold the event.
 // 代表上下文
 type Ctx struct {
-	ma     *Matcher
+	ma     IMatcher
 	Event  *Event
 	State  State
 	caller APICaller
@@ -23,8 +23,18 @@ type Ctx struct {
 }
 
 // GetMatcher ...
-func (ctx *Ctx) GetMatcher() *Matcher {
+func (ctx *Ctx) GetMatcher() IMatcher {
 	return ctx.ma
+}
+
+// GetEvent ...
+func (ctx *Ctx) GetEvent() *Event {
+	return ctx.Event
+}
+
+// GetState ...
+func (ctx *Ctx) GetState() State {
+	return ctx.State
 }
 
 // ExposeCaller as *T, maybe panic if misused
@@ -79,9 +89,9 @@ func (ctx *Ctx) Parse(model interface{}) (err error) {
 
 // CheckSession 判断会话连续性
 func (ctx *Ctx) CheckSession() Rule {
-	return func(ctx2 *Ctx) bool {
-		return ctx.Event.UserID == ctx2.Event.UserID &&
-			ctx.Event.GroupID == ctx2.Event.GroupID // 私聊时GroupID为0，也相等
+	return func(ctx2 Context) bool {
+		return ctx.Event.UserID == ctx2.GetEvent().UserID &&
+			ctx.Event.GroupID == ctx2.GetEvent().GroupID // 私聊时GroupID为0，也相等
 	}
 }
 
@@ -135,7 +145,7 @@ func (ctx *Ctx) Get(prompt string) string {
 	if prompt != "" {
 		ctx.Send(prompt)
 	}
-	return (<-ctx.FutureEvent("message", ctx.CheckSession()).Next()).Event.RawMessage
+	return (<-ctx.FutureEvent("message", ctx.CheckSession()).Next()).GetEvent().RawMessage
 }
 
 // ExtractPlainText 提取消息中的纯文本
@@ -153,12 +163,12 @@ func (ctx *Ctx) Block() {
 
 // Block 在 pre, rules, mid 阶段阻止后续触发
 func (ctx *Ctx) Break() {
-	ctx.ma.Break = true
+	ctx.ma.SetBreak(true)
 }
 
 // NoTimeout 处理时不设超时
 func (ctx *Ctx) NoTimeout() {
-	ctx.ma.NoTimeout = true
+	ctx.ma.SetNoTimeout(true)
 }
 
 // MessageString 字符串消息便于Regex

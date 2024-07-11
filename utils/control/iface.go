@@ -97,7 +97,7 @@ type IControlEngine interface {
 }
 
 type IControlMatcher interface {
-	Handle(handler zero.Handler)
-	Limit(limiterfn func(*zero.Ctx) *rate.Limiter, postfn ...func(*zero.Ctx)) IControlMatcher
-	SetBlock(block bool) IControlMatcher
+	Handle(handler zero.Handler) zero.IMatcher
+	Limit(limiterfn func(zero.Context) *rate.Limiter, postfn ...func(zero.Context)) zero.IMatcher
+	SetBlock(block bool) zero.IMatcher
 }

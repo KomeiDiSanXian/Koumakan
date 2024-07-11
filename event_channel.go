@@ -31,15 +31,15 @@ func (m *Matcher) FutureEvent(Type string, rule ...Rule) *FutureEvent {
 // Next 返回一个 chan 用于接收下一个指定事件
 //
 // 该 chan 必须接收，如需手动取消监听，请使用 Repeat 方法
-func (n *FutureEvent) Next() <-chan *Ctx {
-	ch := make(chan *Ctx, 1)
+func (n *FutureEvent) Next() <-chan Context{
+	ch := make(chan Context, 1)
 	StoreTempMatcher(&Matcher{
 		Type:     Type(n.Type),
 		Block:    n.Block,
 		Priority: n.Priority,
 		Rules:    n.Rule,
 		Engine:   defaultEngine,
-		Handler: func(ctx *Ctx) {
+		Handler: func(ctx Context) {
 			ch <- ctx
 			close(ch)
 		},
@@ -50,18 +50,18 @@ func (n *FutureEvent) Next() <-chan *Ctx {
 // Repeat 返回一个 chan 用于接收无穷个指定事件，和一个取消监听的函数
 //
 // 如果没有取消监听，将不断监听指定事件
-func (n *FutureEvent) Repeat() (recv <-chan *Ctx, cancel func()) {
-	ch, done := make(chan *Ctx, 1), make(chan struct{})
+func (n *FutureEvent) Repeat() (recv <-chan Context, cancel func()) {
+	ch, done := make(chan Context, 1), make(chan struct{})
 	go func() {
 		defer close(ch)
-		in := make(chan *Ctx, 1)
+		in := make(chan Context, 1)
 		matcher := StoreMatcher(&Matcher{
 			Type:     Type(n.Type),
 			Block:    n.Block,
 			Priority: n.Priority,
 			Rules:    n.Rule,
 			Engine:   defaultEngine,
-			Handler: func(ctx *Ctx) {
+			Handler: func(ctx Context) {
 				in <- ctx
 			},
 		})
@@ -84,9 +84,9 @@ func (n *FutureEvent) Repeat() (recv <-chan *Ctx, cancel func()) {
 // Take 基于 Repeat 封装，返回一个 chan 接收指定数量的事件
 //
 // 该 chan 对象必须接收，否则将有 goroutine 泄漏，如需手动取消请使用 Repeat
-func (n *FutureEvent) Take(num int) <-chan *Ctx {
+func (n *FutureEvent) Take(num int) <-chan Context {
 	recv, cancel := n.Repeat()
-	ch := make(chan *Ctx, num)
+	ch := make(chan Context, num)
 	go func() {
 		defer close(ch)
 		for i := 0; i < num; i++ {

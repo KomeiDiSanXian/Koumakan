@@ -14,7 +14,7 @@ import (
 
 // Engine is the pre_handler, post_handler manager
 type Engine struct {
-	en         *zero.Engine
+	en         zero.IEngine
 	prio       int
 	service    string
 	datafolder string
@@ -29,7 +29,7 @@ var briefmap = make(map[string]string)  // briefmap is map[brief]service
 var foldermap = make(map[string]string) // foldermap is map[folder]service
 var extramap = make(map[int16]string)   // extramap is map[gid]service
 
-func newengine(service string, prio int, o *Options[*zero.Ctx]) IControlEngine {
+func newengine(service string, prio int, o *Options[zero.Context]) IControlEngine {
 	e := new(Engine)
 	s, ok := priomap[prio]
 	if ok {
@@ -38,9 +38,9 @@ func newengine(service string, prio int, o *Options[*zero.Ctx]) IControlEngine {
 	priomap[prio] = service
 	e.en = zero.New()
 	e.en.UsePreHandler(
-		func(ctx *zero.Ctx) bool {
+		func(ctx zero.Context) bool {
 			// 防止自触发
-			return ctx.Event.UserID != ctx.Event.SelfID || ctx.Event.PostType != "message"
+			return ctx.GetEvent().UserID != ctx.GetEvent().SelfID || ctx.GetEvent().PostType != "message"
 		},
 		newctrl(service, o),
 	)
@@ -130,7 +130,7 @@ func (e *Engine) UsePostHandler(handler ...zero.Handler) {
 
 // On 添加新的指定消息类型的匹配器
 func (e *Engine) On(typ string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.On(typ, rules...).SetPriority(e.prio))
+	return e.en.On(typ, rules...).SetPriority(e.prio)
 }
 
 // OnMessage 消息触发器
@@ -147,60 +147,60 @@ func (e *Engine) OnMetaEvent(rules ...zero.Rule) IControlMatcher { return e.On("
 
 // OnPrefix 前缀触发器
 func (e *Engine) OnPrefix(prefix string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnPrefix(prefix, rules...).SetPriority(e.prio))
+	return e.en.OnPrefix(prefix, rules...).SetPriority(e.prio)
 }
 
 // OnSuffix 后缀触发器
 func (e *Engine) OnSuffix(suffix string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnSuffix(suffix, rules...).SetPriority(e.prio))
+	return e.en.OnSuffix(suffix, rules...).SetPriority(e.prio)
 }
 
 // OnCommand 命令触发器
 func (e *Engine) OnCommand(commands string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnCommand(commands, rules...).SetPriority(e.prio))
+	return e.en.OnCommand(commands, rules...).SetPriority(e.prio)
 }
 
 // OnRegex 正则触发器
 func (e *Engine) OnRegex(regexPattern string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnRegex(regexPattern, rules...).SetPriority(e.prio))
+	return e.en.OnRegex(regexPattern, rules...).SetPriority(e.prio)
 }
 
 // OnKeyword 关键词触发器
 func (e *Engine) OnKeyword(keyword string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnKeyword(keyword, rules...).SetPriority(e.prio))
+	return e.en.OnKeyword(keyword, rules...).SetPriority(e.prio)
 }
 
 // OnFullMatch 完全匹配触发器
 func (e *Engine) OnFullMatch(src string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnFullMatch(src, rules...).SetPriority(e.prio))
+	return e.en.OnFullMatch(src, rules...).SetPriority(e.prio)
 }
 
 // OnFullMatchGroup 完全匹配触发器组
 func (e *Engine) OnFullMatchGroup(src []string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnFullMatchGroup(src, rules...).SetPriority(e.prio))
+	return e.en.OnFullMatchGroup(src, rules...).SetPriority(e.prio)
 }
 
 // OnKeywordGroup 关键词触发器组
 func (e *Engine) OnKeywordGroup(keywords []string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnKeywordGroup(keywords, rules...).SetPriority(e.prio))
+	return e.en.OnKeywordGroup(keywords, rules...).SetPriority(e.prio)
 }
 
 // OnCommandGroup 命令触发器组
 func (e *Engine) OnCommandGroup(commands []string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnCommandGroup(commands, rules...).SetPriority(e.prio))
+	return e.en.OnCommandGroup(commands, rules...).SetPriority(e.prio)
 }
 
 // OnPrefixGroup 前缀触发器组
 func (e *Engine) OnPrefixGroup(prefix []string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnPrefixGroup(prefix, rules...).SetPriority(e.prio))
+	return e.en.OnPrefixGroup(prefix, rules...).SetPriority(e.prio)
 }
 
 // OnSuffixGroup 后缀触发器组
 func (e *Engine) OnSuffixGroup(suffix []string, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnSuffixGroup(suffix, rules...).SetPriority(e.prio))
+	return e.en.OnSuffixGroup(suffix, rules...).SetPriority(e.prio)
 }
 
 // OnShell shell命令触发器
 func (e *Engine) OnShell(command string, model any, rules ...zero.Rule) IControlMatcher {
-	return (*Matcher)(e.en.OnShell(command, model, rules...).SetPriority(e.prio))
+	return e.en.OnShell(command, model, rules...).SetPriority(e.prio)
 }

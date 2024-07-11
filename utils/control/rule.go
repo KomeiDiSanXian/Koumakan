@@ -33,19 +33,19 @@ const (
 
 var (
 	// managers 每个插件对应的管理
-	managers = NewManager[*zero.Ctx](dbfile)
+	managers = NewManager[zero.Context](dbfile)
 )
 
-func newctrl(service string, o *Options[*zero.Ctx]) zero.Rule {
+func newctrl(service string, o *Options[zero.Context]) zero.Rule {
 	c := managers.NewControl(service, o)
-	return func(ctx *zero.Ctx) bool {
-		ctx.State["manager"] = c
-		return c.Handler(ctx.Event.GroupID, ctx.Event.UserID)
+	return func(ctx zero.Context) bool {
+		ctx.GetState()["manager"] = c
+		return c.Handler(ctx.GetEvent().GroupID, ctx.GetEvent().UserID)
 	}
 }
 
 // Lookup 查找服务
-func Lookup(service string) (IControl[*zero.Ctx], bool) {
+func Lookup(service string) (IControl[zero.Context], bool) {
 	_, ok := briefmap[service]
 	if ok {
 		return managers.Lookup(briefmap[service])
@@ -94,14 +94,14 @@ func init() {
 	}
 	zero.OnCommandGroup([]string{
 		"响应", "response", "沉默", "silence",
-	}, zero.UserOrGrpAdmin, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
-		grp := ctx.Event.GroupID
+	}, zero.UserOrGrpAdmin, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
+		grp := ctx.GetEvent().GroupID
 		if grp == 0 {
 			// 个人用户
-			grp = -ctx.Event.UserID
+			grp = -ctx.GetEvent().UserID
 		}
 		var msg message.MessageSegment
-		switch ctx.State["command"] {
+		switch ctx.GetState()["command"] {
 		case "响应", "response":
 			err := managers.Response(grp)
 			if err == nil {
@@ -117,16 +117,16 @@ func init() {
 				msg = message.Text("ERROR: ", err)
 			}
 		default:
-			msg = message.Text("ERROR: bad command\"", ctx.State["command"], "\"")
+			msg = message.Text("ERROR: bad command\"", ctx.GetState()["command"], "\"")
 		}
 		ctx.SendChain(msg)
 	})
 
 	zero.OnCommandGroup([]string{
 		"全局响应", "allresponse", "全局沉默", "allsilence",
-	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
+	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
 		var msg message.MessageSegment
-		cmd := ctx.State["command"].(string)
+		cmd := ctx.GetState()["command"].(string)
 		switch {
 		case strings.Contains(cmd, "响应") || strings.Contains(cmd, "response"):
 			err := managers.Response(0)
@@ -150,7 +150,7 @@ func init() {
 
 	zero.OnCommandGroup([]string{
 		"启用", "enable", "禁用", "disable",
-	}, zero.UserOrGrpAdmin, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
+	}, zero.UserOrGrpAdmin, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
 		model := extension.CommandModel{}
 		_ = ctx.Parse(&model)
 		service, ok := Lookup(model.Args)
@@ -158,10 +158,10 @@ func init() {
 			ctx.SendChain(message.Text("没有找到指定服务!"))
 			return
 		}
-		grp := ctx.Event.GroupID
+		grp := ctx.GetEvent().GroupID
 		if grp == 0 {
 			// 个人用户
-			grp = -ctx.Event.UserID
+			grp = -ctx.GetEvent().UserID
 		}
 		if strings.Contains(model.Command, "启用") || strings.Contains(model.Command, "enable") {
 			service.Enable(grp)
@@ -182,14 +182,14 @@ func init() {
 
 	zero.OnCommandGroup([]string{
 		"此处启用所有插件", "adhocenableall", "此处禁用所有插件", "adhocdisableall",
-	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
-		grp := ctx.Event.GroupID
+	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
+		grp := ctx.GetEvent().GroupID
 		if grp == 0 {
-			grp = -ctx.Event.UserID
+			grp = -ctx.GetEvent().UserID
 		}
-		condition := strings.Contains(ctx.Event.RawMessage, "启用") || strings.Contains(ctx.Event.RawMessage, "enable")
+		condition := strings.Contains(ctx.GetEvent().RawMessage, "启用") || strings.Contains(ctx.GetEvent().RawMessage, "enable")
 		if condition {
-			managers.ForEach(func(key string, manager IControl[*zero.Ctx]) bool {
+			managers.ForEach(func(key string, manager IControl[zero.Context]) bool {
 				if manager.GetOptions().DisableOnDefault == condition {
 					return true
 				}
@@ -198,7 +198,7 @@ func init() {
 			})
 			ctx.SendChain(message.Text("此处启用所有插件成功"))
 		} else {
-			managers.ForEach(func(key string, manager IControl[*zero.Ctx]) bool {
+			managers.ForEach(func(key string, manager IControl[zero.Context]) bool {
 				manager.Disable(grp)
 				return true
 			})
@@ -208,7 +208,7 @@ func init() {
 
 	zero.OnCommandGroup([]string{
 		"全局启用", "allenable", "全局禁用", "alldisable",
-	}, zero.OnlyToMe, zero.SuperUserPermission).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
+	}, zero.OnlyToMe, zero.SuperUserPermission).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
 		model := extension.CommandModel{}
 		_ = ctx.Parse(&model)
 		service, ok := Lookup(model.Args)
@@ -225,7 +225,7 @@ func init() {
 		}
 	})
 
-	zero.OnCommandGroup([]string{"还原", "reset"}, zero.UserOrGrpAdmin, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
+	zero.OnCommandGroup([]string{"还原", "reset"}, zero.UserOrGrpAdmin, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
 		model := extension.CommandModel{}
 		_ = ctx.Parse(&model)
 		service, ok := Lookup(model.Args)
@@ -233,10 +233,10 @@ func init() {
 			ctx.SendChain(message.Text("没有找到指定服务!"))
 			return
 		}
-		grp := ctx.Event.GroupID
+		grp := ctx.GetEvent().GroupID
 		if grp == 0 {
 			// 个人用户
-			grp = -ctx.Event.UserID
+			grp = -ctx.GetEvent().UserID
 		}
 		service.Reset(grp)
 		ctx.SendChain(message.Text("已还原服务的默认启用状态: " + model.Args))
@@ -244,7 +244,7 @@ func init() {
 
 	zero.OnCommandGroup([]string{
 		"禁止", "ban", "允许", "permit",
-	}, zero.AdminPermission, func(ctx *zero.Ctx) bool {
+	}, zero.AdminPermission, func(ctx zero.Context) bool {
 		model := extension.CommandModel{}
 		_ = ctx.Parse(&model)
 		args := strings.Split(model.Args, " ")
@@ -256,7 +256,7 @@ func init() {
 		argsparsed := make([]int64, 0, len(args))
 		var uid int64
 		var err error
-		haspermission := zero.GroupHigherPermission(func(ctx *zero.Ctx) int64 { return uid })
+		haspermission := zero.GroupHigherPermission(func(ctx zero.Context) int64 { return uid })
 		for _, usr := range args[1:] {
 			uid, err = strconv.ParseInt(usr, 10, 64)
 			if err == nil && haspermission(ctx) {
@@ -268,28 +268,28 @@ func init() {
 			ctx.Break()
 			return false
 		}
-		ctx.State["__command__"] = model.Command
-		ctx.State["__servicename__"] = args[0]
-		ctx.State["__args__"] = argsparsed
+		ctx.GetState()["__command__"] = model.Command
+		ctx.GetState()["__servicename__"] = args[0]
+		ctx.GetState()["__args__"] = argsparsed
 		return true
-	}, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
-		command := ctx.State["__command__"].(string)
-		servicename := ctx.State["__servicename__"].(string)
-		args := ctx.State["__args__"].([]int64)
+	}, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
+		command := ctx.GetState()["__command__"].(string)
+		servicename := ctx.GetState()["__servicename__"].(string)
+		args := ctx.GetState()["__args__"].([]int64)
 		service, ok := Lookup(servicename)
 		if !ok {
 			ctx.SendChain(message.Text("没有找到指定服务!"))
 			return
 		}
-		grp := ctx.Event.GroupID
+		grp := ctx.GetEvent().GroupID
 		if grp == 0 {
-			grp = -ctx.Event.UserID
+			grp = -ctx.GetEvent().UserID
 		}
 		msg := "**" + servicename + "报告**"
 		var members map[int64]struct{}
 		issu := zero.SuperUserPermission(ctx)
 		if !issu {
-			lst := ctx.GetGroupMemberList(ctx.Event.GroupID).Array()
+			lst := ctx.GetGroupMemberList(ctx.GetEvent().GroupID).Array()
 			members = make(map[int64]struct{}, len(lst))
 			for _, m := range lst {
 				members[m.Get("user_id").Int()] = struct{}{}
@@ -333,7 +333,7 @@ func init() {
 
 	zero.OnCommandGroup([]string{
 		"全局禁止", "allban", "全局允许", "allpermit",
-	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
+	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
 		model := extension.CommandModel{}
 		_ = ctx.Parse(&model)
 		args := strings.Split(model.Args, " ")
@@ -369,7 +369,7 @@ func init() {
 
 	zero.OnCommandGroup([]string{
 		"封禁", "block", "解封", "unblock",
-	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
+	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
 		model := extension.CommandModel{}
 		_ = ctx.Parse(&model)
 		args := strings.Split(model.Args, " ")
@@ -402,7 +402,7 @@ func init() {
 
 	zero.OnCommandGroup([]string{
 		"改变默认启用状态", "allflip",
-	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
+	}, zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
 		model := extension.CommandModel{}
 		_ = ctx.Parse(&model)
 		service, ok := Lookup(model.Args)
@@ -419,7 +419,7 @@ func init() {
 	})
 
 	zero.OnCommandGroup([]string{"用法", "usage"}).SetBlock(true).SecondPriority().
-		Handle(func(ctx *zero.Ctx) {
+		Handle(func(ctx zero.Context) {
 			model := extension.CommandModel{}
 			_ = ctx.Parse(&model)
 			service, ok := Lookup(model.Args)
@@ -431,9 +431,9 @@ func init() {
 				ctx.SendChain(message.Text("该服务无帮助!"))
 				return
 			}
-			gid := ctx.Event.GroupID
+			gid := ctx.GetEvent().GroupID
 			if gid == 0 {
-				gid = -ctx.Event.UserID
+				gid = -ctx.GetEvent().UserID
 			}
 			// 处理插件帮助并且计算图像高
 			plugininfo := strings.Split(strings.Trim(service.String(), "\n"), "\n")
@@ -467,10 +467,10 @@ func init() {
 		})
 
 	zero.OnCommandGroup([]string{"服务列表", "service_list"}).SetBlock(true).SecondPriority().
-		Handle(func(ctx *zero.Ctx) {
-			gid := ctx.Event.GroupID
+		Handle(func(ctx zero.Context) {
+			gid := ctx.GetEvent().GroupID
 			if gid == 0 {
-				gid = -ctx.Event.UserID
+				gid = -ctx.GetEvent().UserID
 			}
 			var imgs []image.Image
 			imgs, err = drawservicesof(gid)
@@ -514,7 +514,7 @@ func init() {
 			}
 		})
 
-	zero.OnCommand("设置服务列表显示行数", zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx *zero.Ctx) {
+	zero.OnCommand("设置服务列表显示行数", zero.SuperUserPermission, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(func(ctx zero.Context) {
 		model := extension.CommandModel{}
 		_ = ctx.Parse(&model)
 		mun, err := strconv.Atoi(model.Args)

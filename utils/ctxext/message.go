@@ -17,14 +17,14 @@ type (
 )
 
 // GetMessage ...
-func GetMessage(ctx *zero.Ctx) NoCtxGetMsg {
+func GetMessage(ctx zero.Context) NoCtxGetMsg {
 	return func(id int64) zero.Message {
 		return ctx.GetMessage(message.NewMessageIDFromInteger(id))
 	}
 }
 
 // GetFirstMessageInForward ...
-func GetFirstMessageInForward(ctx *zero.Ctx) NoCtxGetMsg {
+func GetFirstMessageInForward(ctx zero.Context) NoCtxGetMsg {
 	return func(id int64) zero.Message {
 		msg := GetMessage(ctx)(id)
 		if len(msg.Elements) == 0 {
@@ -47,38 +47,38 @@ func GetFirstMessageInForward(ctx *zero.Ctx) NoCtxGetMsg {
 }
 
 // SendTo ...
-func SendTo(ctx *zero.Ctx, user int64) NoCtxSendMsg {
+func SendTo(ctx zero.Context, user int64) NoCtxSendMsg {
 	return func(msg any) int64 {
 		return ctx.SendPrivateMessage(user, msg)
 	}
 }
 
 // Send ...
-func Send(ctx *zero.Ctx) NoCtxSendMsg {
+func Send(ctx zero.Context) NoCtxSendMsg {
 	return func(msg any) int64 {
 		return ctx.Send(msg).ID()
 	}
 }
 
 // SendToSelf ...
-func SendToSelf(ctx *zero.Ctx) NoCtxSendMsg {
+func SendToSelf(ctx zero.Context) NoCtxSendMsg {
 	return func(msg any) int64 {
-		return ctx.SendPrivateMessage(ctx.Event.SelfID, msg)
+		return ctx.SendPrivateMessage(ctx.GetEvent().SelfID, msg)
 	}
 }
 
 // FakeSenderForwardNode ...
-func FakeSenderForwardNode(ctx *zero.Ctx, msgs ...message.MessageSegment) message.MessageSegment {
+func FakeSenderForwardNode(ctx zero.Context, msgs ...message.MessageSegment) message.MessageSegment {
 	return message.CustomNode(
-		ctx.CardOrNickName(ctx.Event.UserID),
-		ctx.Event.UserID,
+		ctx.CardOrNickName(ctx.GetEvent().UserID),
+		ctx.GetEvent().UserID,
 		msgs)
 }
 
 // SendFakeForwardToGroup ...
-func SendFakeForwardToGroup(ctx *zero.Ctx, msgs ...message.MessageSegment) NoCtxSendMsg {
+func SendFakeForwardToGroup(ctx zero.Context, msgs ...message.MessageSegment) NoCtxSendMsg {
 	return func(msg any) int64 {
-		return ctx.SendGroupForwardMessage(ctx.Event.GroupID, message.Message{
+		return ctx.SendGroupForwardMessage(ctx.GetEvent().GroupID, message.Message{
 			FakeSenderForwardNode(ctx, msg.(message.Message)...),
 			FakeSenderForwardNode(ctx, msgs...),
 		}).Get("message_id").Int()
