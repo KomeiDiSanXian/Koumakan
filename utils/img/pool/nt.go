@@ -17,7 +17,7 @@ const (
 	ntrawlen         = ntappidlen + ntrkeylen
 )
 
-var ntcachere = regexp.MustCompile(`^https://multimedia.nt.qq.com.cn/download\?appid=1407&fileid=([0-9a-zA-Z_-]+)&spec=0&rkey=([0-9a-zA-Z_-]+)$`)
+var ntcachere = regexp.MustCompile(`^https://multimedia\.nt\.qq\.com\.cn/download\?appid=1407&fileid=([0-9a-zA-Z_-]+)&spec=0&rkey=([0-9a-zA-Z_-]+)$`)
 
 var (
 	ErrInvalidNTURL = errors.New("invalid nt url")
