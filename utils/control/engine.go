@@ -20,13 +20,17 @@ type Engine struct {
 	datafolder string
 }
 
+func (e *Engine) getPrio() int {
+	return e.prio
+}
+
 var priomap = make(map[int]string)      // priomap is map[prio]service
 var briefmap = make(map[string]string)  // briefmap is map[brief]service
 var foldermap = make(map[string]string) // foldermap is map[folder]service
 var extramap = make(map[int16]string)   // extramap is map[gid]service
 
-func newengine(service string, prio int, o *Options[*zero.Ctx]) (e *Engine) {
-	e = new(Engine)
+func newengine(service string, prio int, o *Options[*zero.Ctx]) IControlEngine {
+	e := new(Engine)
 	s, ok := priomap[prio]
 	if ok {
 		panic(fmt.Sprint("prio", prio, "is used by", s))
@@ -84,7 +88,7 @@ func newengine(service string, prio int, o *Options[*zero.Ctx]) (e *Engine) {
 		}
 	}
 	logrus.Debugln("[control]插件", service, "已设置数据目录", e.datafolder)
-	return
+	return e
 }
 
 // DataFolder 本插件数据目录, 默认 data/zbp/
@@ -125,78 +129,78 @@ func (e *Engine) UsePostHandler(handler ...zero.Handler) {
 }
 
 // On 添加新的指定消息类型的匹配器
-func (e *Engine) On(typ string, rules ...zero.Rule) *Matcher {
+func (e *Engine) On(typ string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.On(typ, rules...).SetPriority(e.prio))
 }
 
 // OnMessage 消息触发器
-func (e *Engine) OnMessage(rules ...zero.Rule) *Matcher { return e.On("message", rules...) }
+func (e *Engine) OnMessage(rules ...zero.Rule) IControlMatcher { return e.On("message", rules...) }
 
 // OnNotice 系统提示触发器
-func (e *Engine) OnNotice(rules ...zero.Rule) *Matcher { return e.On("notice", rules...) }
+func (e *Engine) OnNotice(rules ...zero.Rule) IControlMatcher { return e.On("notice", rules...) }
 
 // OnRequest 请求消息触发器
-func (e *Engine) OnRequest(rules ...zero.Rule) *Matcher { return e.On("request", rules...) }
+func (e *Engine) OnRequest(rules ...zero.Rule) IControlMatcher { return e.On("request", rules...) }
 
 // OnMetaEvent 元事件触发器
-func (e *Engine) OnMetaEvent(rules ...zero.Rule) *Matcher { return e.On("meta_event", rules...) }
+func (e *Engine) OnMetaEvent(rules ...zero.Rule) IControlMatcher { return e.On("meta_event", rules...) }
 
 // OnPrefix 前缀触发器
-func (e *Engine) OnPrefix(prefix string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnPrefix(prefix string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnPrefix(prefix, rules...).SetPriority(e.prio))
 }
 
 // OnSuffix 后缀触发器
-func (e *Engine) OnSuffix(suffix string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnSuffix(suffix string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnSuffix(suffix, rules...).SetPriority(e.prio))
 }
 
 // OnCommand 命令触发器
-func (e *Engine) OnCommand(commands string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnCommand(commands string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnCommand(commands, rules...).SetPriority(e.prio))
 }
 
 // OnRegex 正则触发器
-func (e *Engine) OnRegex(regexPattern string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnRegex(regexPattern string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnRegex(regexPattern, rules...).SetPriority(e.prio))
 }
 
 // OnKeyword 关键词触发器
-func (e *Engine) OnKeyword(keyword string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnKeyword(keyword string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnKeyword(keyword, rules...).SetPriority(e.prio))
 }
 
 // OnFullMatch 完全匹配触发器
-func (e *Engine) OnFullMatch(src string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnFullMatch(src string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnFullMatch(src, rules...).SetPriority(e.prio))
 }
 
 // OnFullMatchGroup 完全匹配触发器组
-func (e *Engine) OnFullMatchGroup(src []string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnFullMatchGroup(src []string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnFullMatchGroup(src, rules...).SetPriority(e.prio))
 }
 
 // OnKeywordGroup 关键词触发器组
-func (e *Engine) OnKeywordGroup(keywords []string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnKeywordGroup(keywords []string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnKeywordGroup(keywords, rules...).SetPriority(e.prio))
 }
 
 // OnCommandGroup 命令触发器组
-func (e *Engine) OnCommandGroup(commands []string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnCommandGroup(commands []string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnCommandGroup(commands, rules...).SetPriority(e.prio))
 }
 
 // OnPrefixGroup 前缀触发器组
-func (e *Engine) OnPrefixGroup(prefix []string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnPrefixGroup(prefix []string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnPrefixGroup(prefix, rules...).SetPriority(e.prio))
 }
 
 // OnSuffixGroup 后缀触发器组
-func (e *Engine) OnSuffixGroup(suffix []string, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnSuffixGroup(suffix []string, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnSuffixGroup(suffix, rules...).SetPriority(e.prio))
 }
 
 // OnShell shell命令触发器
-func (e *Engine) OnShell(command string, model any, rules ...zero.Rule) *Matcher {
+func (e *Engine) OnShell(command string, model any, rules ...zero.Rule) IControlMatcher {
 	return (*Matcher)(e.en.OnShell(command, model, rules...).SetPriority(e.prio))
 }

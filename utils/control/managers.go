@@ -23,7 +23,7 @@ func cpmp2lstbyprio() []IControl[*zero.Ctx] {
 		ret = append(ret, v)
 	}
 	sort.SliceStable(ret, func(i, j int) bool {
-		return enmap[ret[i].GetServiceName()].prio < enmap[ret[j].GetServiceName()].prio
+		return enmap[ret[i].GetServiceName()].getPrio() < enmap[ret[j].GetServiceName()].getPrio()
 	})
 	return ret
 }

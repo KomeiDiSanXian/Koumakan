@@ -4,6 +4,9 @@ import (
 	"sync"
 
 	sql "github.com/FloatTech/sqlite"
+	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/extension/rate"
+	"github.com/wdvxdr1123/ZeroBot/extension/single"
 )
 
 // IManager is an interface for Manager.
@@ -48,4 +51,53 @@ type IControl[CTX any] interface {
 
 	GetOptions() Options[CTX]
 	GetServiceName() string
+}
+
+// IControlEngineTrigger is an interface for trigger.
+type IControlEngineTrigger interface {
+	On(typ string, rules ...zero.Rule) IControlMatcher
+	OnCommand(commands string, rules ...zero.Rule) IControlMatcher
+	OnCommandGroup(commands []string, rules ...zero.Rule) IControlMatcher
+	OnFullMatch(src string, rules ...zero.Rule) IControlMatcher
+	OnFullMatchGroup(src []string, rules ...zero.Rule) IControlMatcher
+	OnKeyword(keyword string, rules ...zero.Rule) IControlMatcher
+	OnKeywordGroup(keywords []string, rules ...zero.Rule) IControlMatcher
+	OnMessage(rules ...zero.Rule) IControlMatcher
+	OnMetaEvent(rules ...zero.Rule) IControlMatcher
+	OnNotice(rules ...zero.Rule) IControlMatcher
+	OnPrefix(prefix string, rules ...zero.Rule) IControlMatcher
+	OnPrefixGroup(prefix []string, rules ...zero.Rule) IControlMatcher
+	OnRegex(regexPattern string, rules ...zero.Rule) IControlMatcher
+	OnRequest(rules ...zero.Rule) IControlMatcher
+	OnShell(command string, model any, rules ...zero.Rule) IControlMatcher
+	OnSuffix(suffix string, rules ...zero.Rule) IControlMatcher
+	OnSuffixGroup(suffix []string, rules ...zero.Rule) IControlMatcher
+}
+
+// IControlEngineHandler is an interface for handler.
+type IControlEngineHandler interface {
+	UsePreHandler(rules ...zero.Rule)
+	UsePostHandler(handler ...zero.Handler)
+	UseMidHandler(rules ...zero.Rule)
+}
+
+// IControlEngine is an interface for ControlEngine.
+type IControlEngine interface {
+	IControlEngineTrigger
+	IControlEngineHandler
+	ApplySingle(s *single.Single[int64]) IControlEngine
+	DataFolder() string
+	Delete()
+	GetCustomLazyData(dataurl, filename string) ([]byte, error)
+	GetLazyData(filename string, isDataMustEqual bool) ([]byte, error)
+	InitWhenNoError(errfun func() error, do func())
+	IsEnabledIn(id int64) bool
+
+	getPrio() int
+}
+
+type IControlMatcher interface {
+	Handle(handler zero.Handler)
+	Limit(limiterfn func(*zero.Ctx) *rate.Limiter, postfn ...func(*zero.Ctx)) IControlMatcher
+	SetBlock(block bool) IControlMatcher
 }

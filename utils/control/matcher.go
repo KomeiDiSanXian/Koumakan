@@ -8,7 +8,7 @@ import (
 type Matcher zero.Matcher
 
 // SetBlock 设置是否阻断后面的 Matcher 触发
-func (m *Matcher) SetBlock(block bool) *Matcher {
+func (m *Matcher) SetBlock(block bool) IControlMatcher {
 	_ = (*zero.Matcher)(m).SetBlock(block)
 	return m
 }
