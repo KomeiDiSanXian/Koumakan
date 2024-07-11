@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/FloatTech/floatbox/binary"
+	"github.com/wdvxdr1123/ZeroBot/utils/helper"
 )
 
 const (
@@ -30,7 +30,7 @@ func unpack(raw string) (nturl, error) {
 	if len(raw) != ntrawlen {
 		return "", ErrInvalidNTRaw
 	}
-	rb := binary.StringToBytes(raw)
+	rb := helper.StringToBytes(raw)
 	b := rb[ntappidlen-1]
 	fileid := base64.RawURLEncoding.EncodeToString(rb[:59])
 	if len(fileid) < int(b) {
@@ -55,15 +55,15 @@ func (nu nturl) pack() (string, error) {
 	var buf [ntrawlen]byte
 	fileid := subs[1]
 	rkey := subs[2]
-	_, err := base64.RawURLEncoding.Decode(buf[:ntappidlen], binary.StringToBytes(fileid))
+	_, err := base64.RawURLEncoding.Decode(buf[:ntappidlen], helper.StringToBytes(fileid))
 	if err != nil {
 		return "", err
 	}
 	buf[ntappidlen-1] = byte(len(fileid))
-	_, err = base64.RawURLEncoding.Decode(buf[ntappidlen:], binary.StringToBytes(rkey))
+	_, err = base64.RawURLEncoding.Decode(buf[ntappidlen:], helper.StringToBytes(rkey))
 	if err != nil {
 		return "", err
 	}
 	buf[ntrawlen-1] = byte(len(rkey))
-	return binary.BytesToString(buf[:]), nil
+	return helper.BytesToString(buf[:]), nil
 }
