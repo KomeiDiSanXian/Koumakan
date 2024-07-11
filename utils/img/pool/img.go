@@ -11,9 +11,11 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+
 	"github.com/wdvxdr1123/ZeroBot/message"
 
 	"github.com/FloatTech/floatbox/web"
+
 	"github.com/wdvxdr1123/ZeroBot/utils/ctxext"
 )
 
@@ -26,9 +28,7 @@ var (
 	ErrGetMsg          = errors.New("get msg error")
 )
 
-var (
-	oldimgre = regexp.MustCompile(`^[0-9A-F-]+$`)
-)
+var oldimgre = regexp.MustCompile(`^[0-9A-F-]+$`)
 
 // Image 图片数据
 type Image struct {

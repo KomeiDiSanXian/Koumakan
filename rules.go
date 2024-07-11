@@ -278,7 +278,7 @@ func GroupHigherPermission(gettarget func(ctx Context) int64) Rule {
 
 // HasPicture 消息含有图片返回 true
 func HasPicture(ctx Context) bool {
-	var urls = []string{}
+	urls := []string{}
 	for _, elem := range ctx.GetEvent().Message {
 		if elem.Type == "image" {
 			if elem.Data["url"] != "" {

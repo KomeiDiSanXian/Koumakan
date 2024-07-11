@@ -2,6 +2,7 @@ package zero
 
 import (
 	"github.com/tidwall/gjson"
+
 	"github.com/wdvxdr1123/ZeroBot/extension/rate"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )

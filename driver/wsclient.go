@@ -19,9 +19,7 @@ import (
 	"github.com/wdvxdr1123/ZeroBot/utils/helper"
 )
 
-var (
-	nullResponse = zero.APIResponse{}
-)
+var nullResponse = zero.APIResponse{}
 
 // WSClient ...
 type WSClient struct {

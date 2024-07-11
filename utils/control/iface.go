@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	sql "github.com/FloatTech/sqlite"
+
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/extension/rate"
 	"github.com/wdvxdr1123/ZeroBot/extension/single"
@@ -25,10 +26,10 @@ type IManager[CTX any] interface {
 	Response(gid int64) error
 	Silence(gid int64) error
 
-	getExtra(gid int64, obj any) error
+	GetExtra(gid int64, obj any) error
 	initBlock() error
 	initResponse() error
-	setExtra(gid int64, obj any) error
+	SetExtra(gid int64, obj any) error
 }
 
 // IControl is an interface for Control.

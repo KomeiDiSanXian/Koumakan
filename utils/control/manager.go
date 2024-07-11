@@ -38,7 +38,7 @@ func NewManager[CTX any](dbpath string) (m Manager[CTX]) {
 	case dbpath == "":
 		dbpath = "ctrl.db"
 	case strings.HasSuffix(dbpath, "/"):
-		err := os.MkdirAll(dbpath, 0755)
+		err := os.MkdirAll(dbpath, 0o755)
 		if err != nil {
 			panic(err)
 		}
@@ -46,7 +46,7 @@ func NewManager[CTX any](dbpath string) (m Manager[CTX]) {
 	default:
 		i := strings.LastIndex(dbpath, "/")
 		if i > 0 {
-			err := os.MkdirAll(dbpath[:i], 0755)
+			err := os.MkdirAll(dbpath[:i], 0o755)
 			if err != nil {
 				panic(err)
 			}

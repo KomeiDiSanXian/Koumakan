@@ -12,6 +12,7 @@ import (
 	"github.com/FloatTech/gg"
 	"github.com/FloatTech/ttl"
 	"github.com/disintegration/imaging"
+
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/utils/img/text"
 
@@ -56,7 +57,7 @@ var (
 )
 
 func init() {
-	err := os.MkdirAll(bannerpath, 0755)
+	err := os.MkdirAll(bannerpath, 0o755)
 	if err != nil {
 		panic(err)
 	}

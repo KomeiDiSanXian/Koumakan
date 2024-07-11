@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/sirupsen/logrus"
+
 	zero "github.com/wdvxdr1123/ZeroBot"
 
 	"github.com/FloatTech/floatbox/file"
@@ -24,10 +25,12 @@ func (e *Engine) getPrio() int {
 	return e.prio
 }
 
-var priomap = make(map[int]string)      // priomap is map[prio]service
-var briefmap = make(map[string]string)  // briefmap is map[brief]service
-var foldermap = make(map[string]string) // foldermap is map[folder]service
-var extramap = make(map[int16]string)   // extramap is map[gid]service
+var (
+	priomap   = make(map[int]string)    // priomap is map[prio]service
+	briefmap  = make(map[string]string) // briefmap is map[brief]service
+	foldermap = make(map[string]string) // foldermap is map[folder]service
+	extramap  = make(map[int16]string)  // extramap is map[gid]service
+)
 
 func newengine(service string, prio int, o *Options[zero.Context]) IControlEngine {
 	e := new(Engine)
@@ -82,7 +85,7 @@ func newengine(service string, prio int, o *Options[zero.Context]) IControlEngin
 		foldermap[e.datafolder] = service
 	}
 	if file.IsNotExist(e.datafolder) {
-		err := os.MkdirAll(e.datafolder, 0755)
+		err := os.MkdirAll(e.datafolder, 0o755)
 		if err != nil {
 			panic(err)
 		}

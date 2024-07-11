@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
+
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/extension"
 	"github.com/wdvxdr1123/ZeroBot/message"
@@ -31,10 +32,8 @@ const (
 	lnfile  = StorageFolder + "lnperpg.txt"
 )
 
-var (
-	// managers 每个插件对应的管理
-	managers = NewManager[zero.Context](dbfile)
-)
+// managers 每个插件对应的管理
+var managers = NewManager[zero.Context](dbfile)
 
 func newctrl(service string, o *Options[zero.Context]) zero.Rule {
 	c := managers.NewControl(service, o)
@@ -69,11 +68,11 @@ func CanResponse(gid int64) bool {
 }
 
 func init() {
-	err := os.MkdirAll("data/Control", 0755)
+	err := os.MkdirAll("data/Control", 0o755)
 	if err != nil {
 		panic(err)
 	}
-	err = os.MkdirAll("data/control", 0755)
+	err = os.MkdirAll("data/control", 0o755)
 	if err != nil {
 		panic(err)
 	}
@@ -522,7 +521,7 @@ func init() {
 			ctx.SendChain(message.Text("请输入正确的数字"))
 			return
 		}
-		err = os.WriteFile(lnfile, binary.StringToBytes(model.Args), 0644)
+		err = os.WriteFile(lnfile, binary.StringToBytes(model.Args), 0o644)
 		if err != nil {
 			ctx.SendChain(message.Text(err))
 			return

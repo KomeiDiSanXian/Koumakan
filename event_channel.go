@@ -31,7 +31,7 @@ func (m *Matcher) FutureEvent(Type string, rule ...Rule) *FutureEvent {
 // Next 返回一个 chan 用于接收下一个指定事件
 //
 // 该 chan 必须接收，如需手动取消监听，请使用 Repeat 方法
-func (n *FutureEvent) Next() <-chan Context{
+func (n *FutureEvent) Next() <-chan Context {
 	ch := make(chan Context, 1)
 	StoreTempMatcher(&Matcher{
 		Type:     Type(n.Type),

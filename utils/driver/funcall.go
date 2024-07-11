@@ -16,9 +16,7 @@ import (
 	"github.com/wdvxdr1123/ZeroBot/utils/helper"
 )
 
-var (
-	nullResponse = zero.APIResponse{}
-)
+var nullResponse = zero.APIResponse{}
 
 // MSG 消息Map
 type MSG = map[string]interface{}

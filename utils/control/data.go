@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
+
 	"github.com/wdvxdr1123/ZeroBot/utils/helper"
 )
 
@@ -62,11 +63,11 @@ func (m *Control[CTX]) GetExtra(obj any) error {
 	if m.Options.Extra == 0 {
 		return ErrUnregisteredExtra
 	}
-	return m.Manager.getExtra(int64(m.Options.Extra), obj)
+	return m.Manager.GetExtra(int64(m.Options.Extra), obj)
 }
 
-// getExtra 取得额外数据
-func (manager *Manager[CTX]) getExtra(gid int64, obj any) error {
+// GetExtra 取得额外数据
+func (manager *Manager[CTX]) GetExtra(gid int64, obj any) error {
 	if !manager.CanResponse(gid) {
 		return errors.New("there is no extra data for a silent group")
 	}
@@ -101,11 +102,11 @@ func (m *Control[CTX]) SetExtra(obj any) error {
 		return ErrUnregisteredExtra
 	}
 	_ = m.Manager.Response(int64(m.Options.Extra))
-	return m.Manager.setExtra(int64(m.Options.Extra), obj)
+	return m.Manager.SetExtra(int64(m.Options.Extra), obj)
 }
 
-// setExtra 设置额外数据
-func (manager *Manager[CTX]) setExtra(gid int64, obj any) error {
+// SetExtra 设置额外数据
+func (manager *Manager[CTX]) SetExtra(gid int64, obj any) error {
 	if !manager.CanResponse(gid) {
 		return errors.New("there is no extra data for a silent group")
 	}
