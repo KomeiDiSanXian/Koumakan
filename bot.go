@@ -396,44 +396,44 @@ func match(ctx Context, matchers []IMatcher, maxwait time.Duration) {
 	processMatchers(ctx, matchers, t)
 }
 
-// preprocessMessageEvent 返回信息事件
-func preprocessMessageEvent(e *Event) {
-	e.Message = message.ParseMessage(e.NativeMessage)
-
-	processAt := func() { // 处理是否at机器人
-		e.IsToMe = false
-		for i, m := range e.Message {
-			if m.Type == "at" {
-				qq, _ := strconv.ParseInt(m.Data["qq"], 10, 64)
-				if qq == e.SelfID {
-					e.IsToMe = true
-					e.Message = append(e.Message[:i], e.Message[i+1:]...)
-					return
-				}
-			}
-		}
-		if e.Message == nil || len(e.Message) == 0 || e.Message[0].Type != "text" {
-			return
-		}
-		first := e.Message[0]
-		first.Data["text"] = strings.TrimLeft(first.Data["text"], " ") // Trim!
-		text := first.Data["text"]
-		for _, nickname := range BotConfig.NickName {
-			if strings.HasPrefix(text, nickname) {
+func processAtEvent(e *Event) {
+	e.IsToMe = false
+	for i, m := range e.Message {
+		if m.Type == "at" {
+			qq, _ := strconv.ParseInt(m.Data["qq"], 10, 64)
+			if qq == e.SelfID {
 				e.IsToMe = true
-				first.Data["text"] = text[len(nickname):]
+				e.Message = append(e.Message[:i], e.Message[i+1:]...)
 				return
 			}
 		}
 	}
+	if e.Message == nil || len(e.Message) == 0 || e.Message[0].Type != "text" {
+		return
+	}
+	first := e.Message[0]
+	first.Data["text"] = strings.TrimLeft(first.Data["text"], " ") // Trim!
+	text := first.Data["text"]
+	for _, nickname := range BotConfig.NickName {
+		if strings.HasPrefix(text, nickname) {
+			e.IsToMe = true
+			first.Data["text"] = text[len(nickname):]
+			return
+		}
+	}
+}
+
+// preprocessMessageEvent 返回信息事件
+func preprocessMessageEvent(e *Event) {
+	e.Message = message.ParseMessage(e.NativeMessage)
 
 	switch {
 	case e.DetailType == "group":
 		log.Infof("[bot] 收到群(%v)消息 %v : %v", e.GroupID, e.Sender.String(), e.RawMessage)
-		processAt()
+		processAtEvent(e)
 	case e.DetailType == "guild" && e.SubType == "channel":
 		log.Infof("[bot] 收到频道(%v)(%v-%v)消息 %v : %v", e.GroupID, e.GuildID, e.ChannelID, e.Sender.String(), e.Message)
-		processAt()
+		processAtEvent(e)
 	default:
 		e.IsToMe = true // 私聊也判断为at
 		log.Infof("[bot] 收到私聊消息 %v : %v", e.Sender.String(), e.RawMessage)
