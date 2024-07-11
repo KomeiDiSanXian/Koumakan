@@ -37,6 +37,14 @@ func (ctx *Ctx) GetState() State {
 	return ctx.State
 }
 
+func (ctx *Ctx) getMatcher() IMatcher {
+	return ctx.ma
+}
+
+func (ctx *Ctx) setMatcher(ma IMatcher) {
+	ctx.ma = ma
+}
+
 // ExposeCaller as *T, maybe panic if misused
 func ExposeCaller[T any](ctx *Ctx) *T {
 	return (*T)(*(*unsafe.Pointer)(unsafe.Add(unsafe.Pointer(&ctx.caller), unsafe.Sizeof(uintptr(0)))))

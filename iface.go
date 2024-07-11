@@ -111,6 +111,9 @@ type Context interface {
 	Parse(model interface{}) error
 	Send(msg interface{}) message.MessageID
 	SendChain(msg ...message.MessageSegment) message.MessageID
+
+	setMatcher(matcher IMatcher)
+	getMatcher() IMatcher
 }
 
 // OneBotAPI OneBotAPI接口

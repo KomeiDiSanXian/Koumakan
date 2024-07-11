@@ -45,15 +45,15 @@ func SetDefaultLimiterManagerParam(interval time.Duration, burst int) {
 // LimitByUser 默认限速器 每 10s 5次触发
 //
 //	按 qq 号限制
-func LimitByUser(ctx *zero.Ctx) *rate.Limiter {
-	return defaultLimiterManager.Load(ctx.Event.UserID)
+func LimitByUser(ctx zero.Context) *rate.Limiter {
+	return defaultLimiterManager.Load(ctx.GetEvent().UserID)
 }
 
 // LimitByGroup 默认限速器 每 10s 5次触发
 //
 //	按群号限制
-func LimitByGroup(ctx *zero.Ctx) *rate.Limiter {
-	return defaultLimiterManager.Load(ctx.Event.GroupID)
+func LimitByGroup(ctx zero.Context) *rate.Limiter {
+	return defaultLimiterManager.Load(ctx.GetEvent().GroupID)
 }
 
 // LimiterManager 自定义限速器管理
@@ -70,13 +70,13 @@ func NewLimiterManager(interval time.Duration, burst int) (m LimiterManager) {
 // LimitByUser 自定义限速器
 //
 //	按 qq 号限制
-func (m LimiterManager) LimitByUser(ctx *zero.Ctx) *rate.Limiter {
-	return m.m.Load(ctx.Event.UserID)
+func (m LimiterManager) LimitByUser(ctx zero.Context) *rate.Limiter {
+	return m.m.Load(ctx.GetEvent().UserID)
 }
 
 // LimitByGroup 自定义限速器
 //
 //	按群号限制
-func (m LimiterManager) LimitByGroup(ctx *zero.Ctx) *rate.Limiter {
-	return m.m.Load(ctx.Event.GroupID)
+func (m LimiterManager) LimitByGroup(ctx zero.Context) *rate.Limiter {
+	return m.m.Load(ctx.GetEvent().GroupID)
 }
